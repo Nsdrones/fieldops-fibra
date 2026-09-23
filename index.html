@@ -1533,12 +1533,12 @@ function renderTecMinhas(c){
   c.innerHTML = `
     <div class="page-header">
       <h2>Minhas Ordens</h2>
-      <p>${emCampo.length} em campo • ${aguardando.length} aguardando</p>
+      <p>${emCampo.length} em campo • ${aguardando.length} em demanda</p>
     </div>
     <div class="page-content">
       ${emCampo.length>0?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:8px">▶ Em Execução</div>`:''}
       ${emCampo.map(os=>renderOSCardTec(os,true)).join('')}
-      ${aguardando.length>0?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:${emCampo.length>0?'16px':0} 0 8px">AGUARDANDO</div>`:''}
+      ${aguardando.length>0?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:${emCampo.length>0?'16px':0} 0 8px">DEMANDA</div>`:''}
       ${aguardando.map(os=>renderOSCardTec(os,false)).join('')}
       ${emCampo.length===0&&aguardando.length===0?`<div style="text-align:center;padding:60px 20px"><div style="font-size:32px;margin-bottom:10px">✅</div><p style="color:var(--muted);font-size:14px">Sem ordens atribuídas</p></div>`:''}
     </div>
@@ -1556,6 +1556,7 @@ function renderTecMinhas(c){
 
 function renderOSCardTec(os, ativo){
   const hasImg = os.fotos && os.fotos.length > 0;
+  const temGarantia = os.origem === 'garantia';
   return `
     <div class="my-os-card" data-priority="${os.priority}">
       <div class="os-id">${os.id}</div>
@@ -1567,8 +1568,27 @@ function renderOSCardTec(os, ativo){
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
         ${os.endereco}
       </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0;padding:10px;background:var(--surface2);border-radius:8px">
+        <div style="font-size:11px"><span style="color:var(--muted);display:block">Origem</span><strong style="text-transform:capitalize">${os.origem||'Inicial'}</strong></div>
+        <div style="font-size:11px"><span style="color:var(--muted);display:block">Prioridade</span><strong style="text-transform:capitalize">${os.priority||'Normal'}</strong></div>
+        ${os.at?`<div style="font-size:11px"><span style="color:var(--muted);display:block">AT</span><strong style="font-family:var(--mono)">${os.at}</strong></div>`:''}
+        ${os.cabo?`<div style="font-size:11px"><span style="color:var(--muted);display:block">Cabo</span><strong style="font-family:var(--mono)">${os.cabo}</strong></div>`:''}
+        ${os.primaria?`<div style="font-size:11px;grid-column:1/-1"><span style="color:var(--muted);display:block">Primária</span><strong style="font-family:var(--mono)">${os.primaria}</strong></div>`:''}
+        <div style="font-size:11px"><span style="color:var(--muted);display:block">SLA</span><strong>${os.sla}min</strong></div>
+        <div style="font-size:11px"><span style="color:var(--muted);display:block">Criado em</span><strong>${fmtDateTime(os.criadoEm)}</strong></div>
+      </div>
+
+      ${temGarantia && (os.supervisorGarantia || os.tecnicoGarantia) ? `
+        <div style="padding:8px 10px;background:var(--warn-lo);border:1px solid var(--warn);border-radius:8px;margin-bottom:8px;display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--warn)">⚠️ Garantia</div>
+          ${os.supervisorGarantia?`<div style="font-size:12px"><span style="color:var(--muted)">Supervisor: </span><strong>${os.supervisorGarantia}</strong></div>`:''}
+          ${os.tecnicoGarantia?`<div style="font-size:12px"><span style="color:var(--muted)">Técnico: </span><strong>${os.tecnicoGarantia}</strong></div>`:''}
+        </div>` : ''}
+
       <div class="os-desc">${os.descricao}</div>
       ${hasImg?`<div class="demand-img"><img src="${os.fotos[0]}" alt="demanda"></div>`:''}
+
       ${ativo?`
         <div class="timer-display" style="margin-bottom:10px">
           <div><div class="timer-label">Tempo em campo</div><div class="timer-val" id="timer-${os.id}">${fmtElapsed(elapsed(os.iniciadoEm))}</div></div>
