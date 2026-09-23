@@ -3,6 +3,36 @@
 <title>FieldOps Fibra</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCZGqt6b2QJn_pwkmDmzlU4x1WcruFAWfA",
+    authDomain: "fieldops-fibra.firebaseapp.com",
+    projectId: "fieldops-fibra",
+    storageBucket: "fieldops-fibra.firebasestorage.app",
+    messagingSenderId: "469526464060",
+    appId: "1:469526464060:web:bbcd31e0935866a762e539"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ── Expõe funções globais para o restante do app ──
+  window._db = db;
+  window._col = (name) => collection(db, name);
+  window._doc = (col, id) => doc(db, col, id);
+  window._setDoc = setDoc;
+  window._deleteDoc = deleteDoc;
+  window._getDocs = getDocs;
+  window._onSnapshot = onSnapshot;
+  window._writeBatch = () => writeBatch(db);
+
+  window._fbReady = true;
+  window.dispatchEvent(new Event('fbReady'));
+</script>
 
 <style>
 /* ── TOKENS ─────────────────────────────────────────────── */
@@ -271,7 +301,15 @@ const USUARIOS_DEFAULT = [
   {id:'tc3', nome:'Rafael Lima', perfil:'tecnico', iniciais:'RL', cor:'#EF4444', senha:'1234'},
 ];
 function loadUsers(){ try{ const d=localStorage.getItem('fieldops_users'); if(d){ const arr=JSON.parse(d); return arr.map(u=>({senha:'1234',...u})); } }catch(e){} return USUARIOS_DEFAULT.map(u=>({...u})); }
-function saveUsers(){ try{ localStorage.setItem('fieldops_users', JSON.stringify(USUARIOS)); }catch(e){} }
+function saveUsers(){
+  try{ localStorage.setItem('fieldops_users', JSON.stringify(USUARIOS)); }catch(e){}
+  // Sincroniza com Firestore
+  if(window._fbReady){
+    USUARIOS.forEach(u=>{
+      window._setDoc(window._doc('usuarios', u.id), u).catch(()=>{});
+    });
+  }
+}
 let USUARIOS = loadUsers();
 
 let currentUser = null;
@@ -283,7 +321,62 @@ function loadOS(){
   try{const d=localStorage.getItem('fieldops_os');if(d)return JSON.parse(d)}catch(e){}
   return generateSampleOS();
 }
-function saveOS(){try{localStorage.setItem('fieldops_os',JSON.stringify(ordens))}catch(e){}}
+function saveOS(){
+  try{localStorage.setItem('fieldops_os',JSON.stringify(ordens))}catch(e){}
+  // Sincroniza com Firestore
+  if(window._fbReady){
+    ordens.forEach(os=>{
+      window._setDoc(window._doc('ordens', os.id), os).catch(()=>{});
+    });
+  }
+}
+
+// ── Sincronização em tempo real via Firestore ──
+function iniciarSyncFirebase(){
+  if(!window._fbReady) return;
+
+  // Listener de ordens
+  window._onSnapshot(window._col('ordens'), snap=>{
+    const dados = [];
+    snap.forEach(d=> dados.push(d.data()));
+    if(dados.length > 0){
+      dados.sort((a,b)=>b.criadoEm - a.criadoEm);
+      ordens = dados;
+      try{ localStorage.setItem('fieldops_os', JSON.stringify(ordens)); }catch(e){}
+      if(currentUser) renderOpContent && renderOpContent();
+    }
+  });
+
+  // Listener de usuários
+  window._onSnapshot(window._col('usuarios'), snap=>{
+    const dados = [];
+    snap.forEach(d=> dados.push(d.data()));
+    if(dados.length > 0){
+      USUARIOS = dados.map(u=>({senha:'1234',...u}));
+      try{ localStorage.setItem('fieldops_users', JSON.stringify(USUARIOS)); }catch(e){}
+    }
+  });
+
+  // Sobe dados locais para o Firestore se estiver vazio
+  window._getDocs(window._col('ordens')).then(snap=>{
+    if(snap.empty && ordens.length > 0){
+      ordens.forEach(os=>{
+        window._setDoc(window._doc('ordens', os.id), os).catch(()=>{});
+      });
+    }
+  });
+  window._getDocs(window._col('usuarios')).then(snap=>{
+    if(snap.empty){
+      USUARIOS.forEach(u=>{
+        window._setDoc(window._doc('usuarios', u.id), u).catch(()=>{});
+      });
+    }
+  });
+}
+
+// Inicia sync quando Firebase estiver pronto
+if(window._fbReady){ iniciarSyncFirebase(); }
+else { window.addEventListener('fbReady', iniciarSyncFirebase); }
 
 function generateSampleOS(){
   const agora = Date.now();
@@ -1349,7 +1442,10 @@ window.confirmarExcluirOS = function(osId){
 
 window.excluirOS = function(osId){
   const i = ordens.findIndex(o=>o.id===osId); if(i<0) return;
-  ordens.splice(i,1); saveOS(); closeModal();
+  ordens.splice(i,1);
+  try{ localStorage.setItem('fieldops_os', JSON.stringify(ordens)); }catch(e){}
+  if(window._fbReady){ window._deleteDoc(window._doc('ordens', osId)).catch(()=>{}); }
+  closeModal();
   toast('🗑️ OS removida');
   renderOpContent();
 };
