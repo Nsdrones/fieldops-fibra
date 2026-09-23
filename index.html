@@ -252,8 +252,18 @@ select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .os-type-row strong{font-size:15px;font-weight:700;flex:1}
 .os-address{font-size:12px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:5px}
 .os-desc{font-size:13px;margin-bottom:10px}
-.demand-img{border-radius:8px;overflow:hidden;background:var(--surface2);max-height:160px;margin-bottom:10px;display:flex;align-items:center;justify-content:center}
-.demand-img img{width:100%;max-height:160px;object-fit:cover}
+.demand-img{margin-bottom:10px}
+.demand-img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
+.demand-img-item{border-radius:8px;overflow:hidden;background:var(--surface2);aspect-ratio:1;cursor:pointer;position:relative}
+.demand-img-item img{width:100%;height:100%;object-fit:cover;display:block}
+.demand-img-item:active{opacity:.8}
+/* Lightbox */
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+#lightbox img{max-width:100%;max-height:80vh;border-radius:8px;object-fit:contain}
+#lightbox-close{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none}
+#lightbox-nav{display:flex;gap:16px;margin-top:16px}
+#lightbox-nav button{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:15px;cursor:pointer}
+#lightbox-counter{color:rgba(255,255,255,.6);font-size:13px;margin-top:8px}
 
 /* ── BAIXA FORM ──────────────────────────────────────────── */
 .action-bar{display:flex;gap:8px;flex-wrap:wrap}
@@ -974,6 +984,39 @@ function renderFotoPreview(){
 
 window.removerFoto = function(i){ novaFotos.splice(i,1); renderFotoPreview(); };
 
+/* ── LIGHTBOX ── */
+let lbFotos = [], lbIdx = 0;
+window.abrirLightbox = function(fotos, idx){
+  lbFotos = fotos; lbIdx = idx;
+  lbRender();
+  document.getElementById('lightbox').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+};
+window.fecharLightbox = function(){
+  document.getElementById('lightbox').classList.add('hidden');
+  document.body.style.overflow = '';
+};
+window.lbNav = function(dir){
+  lbIdx = (lbIdx + dir + lbFotos.length) % lbFotos.length;
+  lbRender();
+};
+function lbRender(){
+  document.getElementById('lightbox-img').src = lbFotos[lbIdx];
+  document.getElementById('lightbox-counter').textContent = `${lbIdx+1} / ${lbFotos.length}`;
+  document.getElementById('lb-prev').style.display = lbFotos.length > 1 ? '' : 'none';
+  document.getElementById('lb-next').style.display = lbFotos.length > 1 ? '' : 'none';
+}
+// swipe to navigate
+(function(){
+  let sx = 0;
+  document.addEventListener('touchstart', e=>{ if(!document.getElementById('lightbox').classList.contains('hidden')) sx = e.touches[0].clientX; });
+  document.addEventListener('touchend', e=>{
+    if(document.getElementById('lightbox').classList.contains('hidden')) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    if(Math.abs(dx) > 50) lbNav(dx < 0 ? 1 : -1);
+  });
+})();
+
 window.toggleGarantia = function(val){
   const bloco = document.getElementById('bloco-garantia');
   if(!bloco) return;
@@ -1603,6 +1646,16 @@ function renderTecnico(){
     </div>
     <div id="tec-content" style="flex:1;overflow-y:auto;display:flex;flex-direction:column"></div>
     <div id="tec-modal"></div>
+<!-- Lightbox -->
+<div id="lightbox" class="hidden" onclick="fecharLightbox()">
+  <button id="lightbox-close" onclick="fecharLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="foto ampliada" onclick="event.stopPropagation()">
+  <div id="lightbox-nav">
+    <button id="lb-prev" onclick="event.stopPropagation();lbNav(-1)">‹ Anterior</button>
+    <button id="lb-next" onclick="event.stopPropagation();lbNav(1)">Próxima ›</button>
+  </div>
+  <div id="lightbox-counter"></div>
+</div>
   `;
   renderTecContent();
 }
@@ -1683,7 +1736,13 @@ function renderOSCardTec(os, ativo){
         </div>` : ''}
 
       <div class="os-desc">${os.descricao}</div>
-      ${hasImg?`<div class="demand-img"><img src="${os.fotos[0]}" alt="demanda"></div>`:''}
+      ${hasImg?`
+        <div class="demand-img">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">📷 ${os.fotos.length} foto${os.fotos.length>1?'s':''} — toque para ampliar</div>
+          <div class="demand-img-grid">
+            ${os.fotos.map((src,i)=>`<div class="demand-img-item" onclick="abrirLightbox(${JSON.stringify(os.fotos)},${i})"><img src="${src}" alt="foto ${i+1}"></div>`).join('')}
+          </div>
+        </div>`:''}
 
       ${ativo?`
         <div class="timer-display" style="margin-bottom:10px">
