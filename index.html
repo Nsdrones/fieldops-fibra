@@ -262,14 +262,14 @@ select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
    STATE
 ═══════════════════════════════════════════════════════════ */
 const USUARIOS_DEFAULT = [
-  {id:'adm1', nome:'Marcus Maia', perfil:'admin', iniciais:'MM', cor:'#F59E0B'},
-  {id:'op1', nome:'Ana Rodrigues', perfil:'operador', iniciais:'AR', cor:'#7C3AED'},
-  {id:'op2', nome:'Carlos Mendes', perfil:'operador', iniciais:'CM', cor:'#0891B2'},
-  {id:'tc1', nome:'João Silva', perfil:'tecnico', iniciais:'JS', cor:'#F97316'},
-  {id:'tc2', nome:'Pedro Costa', perfil:'tecnico', iniciais:'PC', cor:'#22C55E'},
-  {id:'tc3', nome:'Rafael Lima', perfil:'tecnico', iniciais:'RL', cor:'#EF4444'},
+  {id:'adm1', nome:'Marcus Maia', perfil:'admin', iniciais:'MM', cor:'#F59E0B', senha:'1234'},
+  {id:'op1', nome:'Ana Rodrigues', perfil:'operador', iniciais:'AR', cor:'#7C3AED', senha:'1234'},
+  {id:'op2', nome:'Carlos Mendes', perfil:'operador', iniciais:'CM', cor:'#0891B2', senha:'1234'},
+  {id:'tc1', nome:'João Silva', perfil:'tecnico', iniciais:'JS', cor:'#F97316', senha:'1234'},
+  {id:'tc2', nome:'Pedro Costa', perfil:'tecnico', iniciais:'PC', cor:'#22C55E', senha:'1234'},
+  {id:'tc3', nome:'Rafael Lima', perfil:'tecnico', iniciais:'RL', cor:'#EF4444', senha:'1234'},
 ];
-function loadUsers(){ try{ const d=localStorage.getItem('fieldops_users'); if(d) return JSON.parse(d); }catch(e){} return USUARIOS_DEFAULT.map(u=>({...u})); }
+function loadUsers(){ try{ const d=localStorage.getItem('fieldops_users'); if(d){ const arr=JSON.parse(d); return arr.map(u=>({senha:'1234',...u})); } }catch(e){} return USUARIOS_DEFAULT.map(u=>({...u})); }
 function saveUsers(){ try{ localStorage.setItem('fieldops_users', JSON.stringify(USUARIOS)); }catch(e){} }
 let USUARIOS = loadUsers();
 
@@ -371,9 +371,9 @@ function avatar(user, size='sm'){
 /* ═══════════════════════════════════════════════════════════
    LOGIN
 ═══════════════════════════════════════════════════════════ */
-function renderLogin(){
+function renderLogin(step, uid){
   const s = document.getElementById('screen-login');
-  s.innerHTML = `
+  const logo = `
     <div class="login-logo">
       <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="40" height="40" rx="10" fill="#F97316"/>
@@ -381,13 +381,46 @@ function renderLogin(){
         <circle cx="20" cy="20" r="3" fill="#fff"/>
       </svg>
       <h1>Field<span>Ops</span> Fibra</h1>
-    </div>
+    </div>`;
+
+  if(step==='senha' && uid){
+    const u = USUARIOS.find(x=>x.id===uid);
+    if(!u){ renderLogin(); return; }
+    const perfLabel = {admin:'Administrador • Acesso Total', operador:'Painel de Despacho', tecnico:'App de Campo'}[u.perfil]||u.perfil;
+    s.innerHTML = `
+      ${logo}
+      <div class="login-card">
+        <div style="display:flex;align-items:center;gap:14px;padding:4px 0 8px">
+          <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor};width:48px;height:48px;font-size:18px">${u.iniciais}</div>
+          <div><div style="font-size:15px;font-weight:700">${u.nome}</div><div style="font-size:12px;color:var(--muted)">${perfLabel}</div></div>
+        </div>
+        <div class="field">
+          <label>Senha</label>
+          <div style="position:relative">
+            <input id="login-senha" class="input" type="password" placeholder="Digite sua senha" autocomplete="current-password" style="padding-right:42px" onkeydown="if(event.key==='Enter')confirmarLogin('${uid}')">
+            <button type="button" onclick="toggleSenhaVis()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);padding:4px" id="vis-btn">
+              <svg id="vis-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div id="login-erro" style="display:none;color:var(--danger);font-size:12px;margin-top:4px">❌ Senha incorreta. Tente novamente.</div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="confirmarLogin('${uid}')">Entrar</button>
+        <button class="btn btn-outline btn-full" onclick="renderLogin()">← Trocar usuário</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted)">Dados salvos no navegador</p>
+    `;
+    setTimeout(()=>document.getElementById('login-senha')?.focus(), 80);
+    return;
+  }
+
+  s.innerHTML = `
+    ${logo}
     <div class="login-card">
       <h2>Escolha seu perfil</h2>
       <div class="login-profiles">
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Administrador</div>
         ${USUARIOS.filter(u=>u.perfil==='admin').map(u=>`
-          <button class="profile-btn" onclick="login('${u.id}')" style="border-color:${u.cor}40;background:${u.cor}0d">
+          <button class="profile-btn" onclick="renderLogin('senha','${u.id}')" style="border-color:${u.cor}40;background:${u.cor}0d">
             <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor}">${u.iniciais}</div>
             <div class="profile-info"><strong>${u.nome}</strong><small>Administrador • Acesso Total</small></div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${u.cor}" stroke-width="2" style="flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -395,23 +428,48 @@ function renderLogin(){
         `).join('')}
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:4px">Operadores</div>
         ${USUARIOS.filter(u=>u.perfil==='operador').map(u=>`
-          <button class="profile-btn" onclick="login('${u.id}')">
+          <button class="profile-btn" onclick="renderLogin('senha','${u.id}')">
             <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor}">${u.iniciais}</div>
             <div class="profile-info"><strong>${u.nome}</strong><small>Painel de Despacho</small></div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         `).join('')}
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:4px">Técnicos de Campo</div>
         ${USUARIOS.filter(u=>u.perfil==='tecnico').map(u=>`
-          <button class="profile-btn" onclick="login('${u.id}')">
+          <button class="profile-btn" onclick="renderLogin('senha','${u.id}')">
             <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor}">${u.iniciais}</div>
             <div class="profile-info"><strong>${u.nome}</strong><small>App de Campo</small></div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         `).join('')}
       </div>
     </div>
-    <p style="font-size:11px;color:var(--muted)">Demo • Dados salvos no navegador</p>
+    <p style="font-size:11px;color:var(--muted)">Dados salvos no navegador</p>
   `;
 }
+
+window.toggleSenhaVis = function(){
+  const inp = document.getElementById('login-senha');
+  if(!inp) return;
+  inp.type = inp.type==='password' ? 'text' : 'password';
+  document.getElementById('vis-icon').innerHTML = inp.type==='password'
+    ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    : '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+};
+
+window.confirmarLogin = function(uid){
+  const u = USUARIOS.find(x=>x.id===uid);
+  const senha = document.getElementById('login-senha')?.value;
+  if(!u) return;
+  if(senha !== (u.senha||'1234')){
+    const erro = document.getElementById('login-erro');
+    if(erro){ erro.style.display='block'; }
+    document.getElementById('login-senha').value='';
+    document.getElementById('login-senha').focus();
+    return;
+  }
+  login(uid);
+};
 
 function login(uid){
   currentUser = USUARIOS.find(u=>u.id===uid) || USUARIOS[0];
@@ -999,6 +1057,16 @@ window.abrirFormUsuario = function(uid){
               ${COR_PALETTE.map(c=>`<button type="button" onclick="selecionarCor('${c}')" style="width:32px;height:32px;border-radius:50%;background:${c};border:3px solid ${c===cor?'#fff':'transparent'};outline:${c===cor?'2px solid '+c:'none'};outline-offset:2px;cursor:pointer;transition:.15s" id="cor-btn-${c.slice(1)}"></button>`).join('')}
             </div>
           </div>
+          <div class="field">
+            <label>${u ? 'Nova Senha (deixe em branco para manter)' : 'Senha'}</label>
+            <div style="position:relative">
+              <input id="u-senha" class="input" type="password" placeholder="${u ? 'Nova senha (opcional)' : 'Senha de acesso'}" autocomplete="new-password" style="padding-right:42px">
+              <button type="button" onclick="(function(){const i=document.getElementById('u-senha');i.type=i.type==='password'?'text':'password'})()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);padding:4px">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            ${!u ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">Padrão inicial: 1234</div>' : ''}
+          </div>
           <button class="btn btn-primary btn-full" onclick="salvarUsuario('${uid||''}')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
             ${u?'Salvar Alterações':'Criar Usuário'}
@@ -1035,15 +1103,17 @@ window.salvarUsuario = function(uid){
   const ini   = document.getElementById('u-ini')?.value?.trim().toUpperCase().slice(0,2);
   const perfil= document.getElementById('u-perfil')?.value;
   const cor   = document.getElementById('u-cor')?.value||'#94A3B8';
+  const senhaInput = document.getElementById('u-senha')?.value?.trim();
   if(!nome){ toast('⚠️ Informe o nome'); return; }
   const partes = nome.split(/\s+/);
   const iniciais = ini || (partes.length>=2?partes[0][0]+partes[partes.length-1][0]:partes[0].slice(0,2)).toUpperCase();
   if(uid){
     const u = USUARIOS.find(x=>x.id===uid); if(!u) return;
     u.nome=nome; u.iniciais=iniciais; u.perfil=perfil; u.cor=cor;
+    if(senhaInput) u.senha=senhaInput;
     if(currentUser.id===uid){ currentUser.nome=nome; currentUser.iniciais=iniciais; currentUser.cor=cor; }
   } else {
-    USUARIOS.push({id:'usr'+Date.now(), nome, perfil, iniciais, cor});
+    USUARIOS.push({id:'usr'+Date.now(), nome, perfil, iniciais, cor, senha: senhaInput||'1234'});
   }
   saveUsers(); closeModal(); toast(uid?'✅ Usuário atualizado':'✅ Usuário criado');
   renderAdminUsuarios(document.getElementById('op-content'));
