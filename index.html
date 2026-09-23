@@ -681,7 +681,7 @@ function renderOpLista(c){
     <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px;flex-shrink:0">
       <div style="position:relative">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="busca-os" class="input" type="text" placeholder="Buscar por ID, tipo, endereço ou técnico..." style="padding-left:32px" oninput="setBusca(this.value)">
+        <input id="busca-os" class="input" type="text" placeholder="Buscar por ID, tipo, PON, endereço ou técnico..." style="padding-left:32px" oninput="setBusca(this.value)">
       </div>
       <div style="display:flex;gap:8px;overflow-x:auto">
         <button class="btn btn-sm chip-filter-btn active" data-f="todos" onclick="setFiltro('todos',this)">Todos (${ordens.length})</button>
@@ -719,7 +719,10 @@ function renderListaBody(){
       return os.id.toLowerCase().includes(listaBusca)
         || os.tipo.toLowerCase().includes(listaBusca)
         || os.endereco.toLowerCase().includes(listaBusca)
-        || (tec && tec.nome.toLowerCase().includes(listaBusca));
+        || (tec && tec.nome.toLowerCase().includes(listaBusca))
+        || (os.pon && os.pon.includes(listaBusca))
+        || (os.at && os.at.toLowerCase().includes(listaBusca))
+        || (os.primaria && os.primaria.toLowerCase().includes(listaBusca));
     });
   }
   if(lista.length===0){
@@ -755,6 +758,7 @@ function renderListaBody(){
           ${os.at?`<div class="os-meta-item"><span>AT</span><strong>${os.at}</strong></div>`:'<div class="os-meta-item"></div>'}
           ${os.cabo?`<div class="os-meta-item"><span>Cabo</span><strong>${os.cabo}</strong></div>`:'<div class="os-meta-item"></div>'}
           ${os.primaria?`<div class="os-meta-item"><span>Primária</span><strong>${os.primaria}</strong></div>`:'<div class="os-meta-item"></div>'}
+          ${os.pon?`<div class="os-meta-item" style="grid-column:1/-1"><span>PON</span><strong style="font-family:var(--mono)">${os.pon}</strong></div>`:''}
           <div class="os-meta-item"><span>Duração</span><strong class="${elapsedMin!==null&&!slaOk?'danger':'ok'}">${fmtElapsed(elapsedMin||os.duracaoMin)}</strong></div>
           <div class="os-meta-item" style="grid-column:1/-1"><span>Técnico Atribuído</span><strong>${tec?tec.nome:'Em demanda'}</strong></div>
           ${os.origem==='garantia'&&os.supervisorGarantia?`<div class="os-meta-item"><span>Supervisor Garantia</span><strong>${os.supervisorGarantia}</strong></div>`:''}
@@ -797,6 +801,10 @@ window.verOS = function(id){
             <div class="kv"><span>Técnico</span><strong>${tec?tec.nome:'Não atribuído'}</strong></div>
             <div class="kv"><span>SLA</span><strong>${os.sla} min</strong></div>
             <div class="kv"><span>Duração</span><strong>${fmtElapsed(elapsedMin||os.duracaoMin)}</strong></div>
+            ${os.at?`<div class="kv"><span>AT</span><strong style="font-family:var(--mono)">${os.at}</strong></div>`:''}
+            ${os.cabo?`<div class="kv"><span>Cabo</span><strong style="font-family:var(--mono)">${os.cabo}</strong></div>`:''}
+            ${os.primaria?`<div class="kv"><span>Primária</span><strong style="font-family:var(--mono)">${os.primaria}</strong></div>`:''}
+            ${os.pon?`<div class="kv" style="grid-column:1/-1"><span>PON</span><strong style="font-family:var(--mono)">${os.pon}</strong></div>`:''}
           </div>
         </div>
 
@@ -914,6 +922,10 @@ function renderOpNova(c){
         <div class="field">
           <label>Primária <span style="color:var(--muted);font-weight:400;text-transform:none">(até 6 caracteres)</span></label>
           <input id="os-primaria" class="input" placeholder="Ex: A1B2C3" maxlength="6" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <div class="field">
+          <label>PON <span style="color:var(--muted);font-weight:400;text-transform:none">(até 12 dígitos)</span></label>
+          <input id="os-pon" class="input" placeholder="Ex: 123456789012" maxlength="12" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="font-family:var(--mono)">
         </div>
         <div class="field">
           <label>Prioridade</label>
@@ -1036,6 +1048,7 @@ window.criarOS = function(){
   const at     = document.getElementById('os-at')?.value?.trim()||'';
   const cabo   = document.getElementById('os-cabo')?.value?.trim()||'';
   const primaria = document.getElementById('os-primaria')?.value?.trim()||'';
+  const pon    = document.getElementById('os-pon')?.value?.trim()||'';
   if(!end||!desc){ toast('⚠️ Endereço e descrição são obrigatórios'); return; }
   const nova = {
     id: uid(), tipo, status:'aguardando', priority:prio,
@@ -1046,7 +1059,7 @@ window.criarOS = function(){
     fotos:[...novaFotos], evidencias:[],
     obs:'', sla, duracaoMin:null,
     origem, supervisorGarantia:supGar, tecnicoGarantia:tecGar,
-    at, cabo, primaria
+    at, cabo, primaria, pon
   };
   ordens.unshift(nova); saveOS();
   novaFotos=[];
@@ -1724,6 +1737,7 @@ function renderOSCardTec(os, ativo){
         ${os.at?`<div style="font-size:11px"><span style="color:var(--muted);display:block">AT</span><strong style="font-family:var(--mono)">${os.at}</strong></div>`:''}
         ${os.cabo?`<div style="font-size:11px"><span style="color:var(--muted);display:block">Cabo</span><strong style="font-family:var(--mono)">${os.cabo}</strong></div>`:''}
         ${os.primaria?`<div style="font-size:11px;grid-column:1/-1"><span style="color:var(--muted);display:block">Primária</span><strong style="font-family:var(--mono)">${os.primaria}</strong></div>`:''}
+        ${os.pon?`<div style="font-size:11px;grid-column:1/-1"><span style="color:var(--muted);display:block">PON</span><strong style="font-family:var(--mono)">${os.pon}</strong></div>`:''}
         <div style="font-size:11px"><span style="color:var(--muted);display:block">SLA</span><strong>${os.sla}min</strong></div>
         <div style="font-size:11px"><span style="color:var(--muted);display:block">Criado em</span><strong>${fmtDateTime(os.criadoEm)}</strong></div>
       </div>
