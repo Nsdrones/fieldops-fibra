@@ -1,3 +1,4 @@
+
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>FieldOps Fibra</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -354,7 +355,7 @@ function elapsed(from,to){ if(!from) return 0; const ms=(to||Date.now())-from; r
 function fmtElapsed(min){ if(!min&&min!==0) return '—'; const h=Math.floor(min/60),m=min%60; return h>0?`${h}h${m.toString().padStart(2,'0')}min`:`${m}min` }
 function getUser(id){ return USUARIOS.find(u=>u.id===id)||null }
 function getOS(id){ return ordens.find(o=>o.id===id) }
-function statusLabel(s){ return {aguardando:'Aguardando',['em-campo']:'Em Campo',concluido:'Concluído',emergencia:'Emergência',apoio:'Apoio'}[s]||s }
+function statusLabel(s){ return {aguardando:'Demanda',['em-campo']:'Em Campo',concluido:'Concluído',emergencia:'Emergência',apoio:'Apoio'}[s]||s }
 function chipClass(s){ return {aguardando:'chip-aguardando',['em-campo']:'chip-em-campo',concluido:'chip-concluido',emergencia:'chip-emergencia',apoio:'chip-apoio'}[s]||'' }
 
 function toast(msg, dur=2500){
@@ -564,38 +565,67 @@ function renderOpContent(){
 }
 
 /* ── LISTA DE OS ── */
+let listaFiltro = 'todos';
+let listaBusca = '';
+
 function renderOpLista(c){
-  let filtro = 'todos';
+  listaFiltro = 'todos'; listaBusca = '';
   c.innerHTML = `
     <div class="page-header">
       <h2>Ordens de Serviço</h2>
-      <p>${ordens.length} ordens • ${ordens.filter(o=>o.status==='aguardando').length} aguardando atribuição</p>
+      <p>${ordens.length} ordens • ${ordens.filter(o=>o.status==='aguardando').length} em demanda</p>
     </div>
-    <div style="padding:10px 16px;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid var(--border)">
-      <button class="btn btn-sm chip-filter-btn active" data-f="todos" onclick="setFiltro('todos',this)">Todos (${ordens.length})</button>
-      <button class="btn btn-sm chip-filter-btn" data-f="aguardando" onclick="setFiltro('aguardando',this)">Aguardando (${ordens.filter(o=>o.status==='aguardando').length})</button>
-      <button class="btn btn-sm chip-filter-btn" data-f="em-campo" onclick="setFiltro('em-campo',this)">Em Campo (${ordens.filter(o=>o.status==='em-campo').length})</button>
-      <button class="btn btn-sm chip-filter-btn" data-f="concluido" onclick="setFiltro('concluido',this)">Concluídos (${ordens.filter(o=>o.status==='concluido').length})</button>
+    <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px;flex-shrink:0">
+      <div style="position:relative">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="busca-os" class="input" type="text" placeholder="Buscar por ID, tipo, endereço ou técnico..." style="padding-left:32px" oninput="setBusca(this.value)">
+      </div>
+      <div style="display:flex;gap:8px;overflow-x:auto">
+        <button class="btn btn-sm chip-filter-btn active" data-f="todos" onclick="setFiltro('todos',this)">Todos (${ordens.length})</button>
+        <button class="btn btn-sm chip-filter-btn" data-f="aguardando" onclick="setFiltro('aguardando',this)">Demanda (${ordens.filter(o=>o.status==='aguardando').length})</button>
+        <button class="btn btn-sm chip-filter-btn" data-f="em-campo" onclick="setFiltro('em-campo',this)">Em Campo (${ordens.filter(o=>o.status==='em-campo').length})</button>
+        <button class="btn btn-sm chip-filter-btn" data-f="concluido" onclick="setFiltro('concluido',this)">Concluídos (${ordens.filter(o=>o.status==='concluido').length})</button>
+      </div>
     </div>
     <div class="page-content" id="lista-body"></div>
   `;
-  renderListaBody('todos');
-  // inject filter btn styles
+  renderListaBody();
   const style = document.createElement('style');
   style.textContent=`.chip-filter-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:99px;white-space:nowrap}.chip-filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}`;
   c.prepend(style);
 }
 
 window.setFiltro = function(f, btn){
+  listaFiltro = f;
   document.querySelectorAll('.chip-filter-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  renderListaBody(f);
+  renderListaBody();
 };
 
-function renderListaBody(f){
+window.setBusca = function(val){
+  listaBusca = val.toLowerCase().trim();
+  renderListaBody();
+};
+
+function renderListaBody(){
   const body = document.getElementById('lista-body'); if(!body) return;
-  const lista = f==='todos' ? ordens : ordens.filter(o=>o.status===f);
-  if(lista.length===0){body.innerHTML='<p style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px">Nenhuma ordem</p>';return;}
+  let lista = listaFiltro==='todos' ? ordens : ordens.filter(o=>o.status===listaFiltro);
+  if(listaBusca){
+    lista = lista.filter(os=>{
+      const tec = getUser(os.tecnico);
+      return os.id.toLowerCase().includes(listaBusca)
+        || os.tipo.toLowerCase().includes(listaBusca)
+        || os.endereco.toLowerCase().includes(listaBusca)
+        || (tec && tec.nome.toLowerCase().includes(listaBusca));
+    });
+  }
+  if(lista.length===0){
+    body.innerHTML=`<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 8px;display:block;opacity:.4"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Nenhuma ordem encontrada
+    </div>`;
+    return;
+  }
   body.innerHTML = lista.map(os=>{
     const tec = getUser(os.tecnico);
     const elapsedMin = os.iniciadoEm ? elapsed(os.iniciadoEm, os.concluidoEm||undefined) : null;
@@ -615,15 +645,23 @@ function renderListaBody(f){
           ${os.endereco}
         </div>
         <div class="os-card-meta">
-          <div class="os-meta-item"><span>Criado</span><strong>${fmtDateTime(os.criadoEm)}</strong></div>
-          <div class="os-meta-item"><span>Técnico</span><strong>${tec?tec.nome:'Não atribuído'}</strong></div>
+          <div class="os-meta-item"><span>Tipo de Serviço</span><strong>${os.tipo}</strong></div>
+          <div class="os-meta-item"><span>Prioridade</span><strong style="text-transform:capitalize">${os.priority||'normal'}</strong></div>
+          <div class="os-meta-item"><span>Origem</span><strong style="text-transform:capitalize">${os.origem||'Inicial'}</strong></div>
           <div class="os-meta-item"><span>SLA</span><strong>${os.sla}min</strong></div>
+          ${os.at?`<div class="os-meta-item"><span>AT</span><strong>${os.at}</strong></div>`:'<div class="os-meta-item"></div>'}
+          ${os.cabo?`<div class="os-meta-item"><span>Cabo</span><strong>${os.cabo}</strong></div>`:'<div class="os-meta-item"></div>'}
+          ${os.primaria?`<div class="os-meta-item"><span>Primária</span><strong>${os.primaria}</strong></div>`:'<div class="os-meta-item"></div>'}
           <div class="os-meta-item"><span>Duração</span><strong class="${elapsedMin!==null&&!slaOk?'danger':'ok'}">${fmtElapsed(elapsedMin||os.duracaoMin)}</strong></div>
+          <div class="os-meta-item" style="grid-column:1/-1"><span>Técnico Atribuído</span><strong>${tec?tec.nome:'Em demanda'}</strong></div>
+          ${os.origem==='garantia'&&os.supervisorGarantia?`<div class="os-meta-item"><span>Supervisor Garantia</span><strong>${os.supervisorGarantia}</strong></div>`:''}
+          ${os.origem==='garantia'&&os.tecnicoGarantia?`<div class="os-meta-item"><span>Técnico Garantia</span><strong>${os.tecnicoGarantia}</strong></div>`:''}
         </div>
         <div class="os-card-actions">
           <button class="btn btn-outline btn-sm" onclick="verOS('${os.id}')">Ver Detalhes</button>
           ${os.status==='aguardando'?`<button class="btn btn-primary btn-sm" onclick="abrirAtribuir('${os.id}')">Atribuir Técnico</button>`:''}
           ${os.status==='concluido'?`<button class="btn btn-sm" style="border:1px solid var(--border);color:var(--muted)" onclick="verRelatorio('${os.id}')">📋 Relatório</button>`:''}
+          ${currentUser.perfil==='admin'?`<button class="btn btn-sm" style="border:1px solid var(--danger-lo);color:var(--danger);margin-left:auto" onclick="confirmarExcluirOS('${os.id}')">🗑️ Excluir</button>`:''}
         </div>
       </div>
     </div>
@@ -735,10 +773,44 @@ function renderOpNova(c){
         <div class="field">
           <label>Tipo de Serviço</label>
           <select id="os-tipo" class="input">
-            <option>Reparo de Fibra (Corte/Fusão)</option>
+            <option>Ocorrência Convencional</option>
+            <option>Ocorrência Barramento</option>
+            <option>Ocorrência FTTA</option>
+            <option>SPR/Melhoria de Rede</option>
             <option>Emergência / SLA Crítico</option>
             <option>Apoio a Outro Técnico</option>
           </select>
+        </div>
+        <div class="field">
+          <label>Origem</label>
+          <select id="os-origem" class="input" onchange="toggleGarantia(this.value)">
+            <option value="inicial">Inicial</option>
+            <option value="garantia">Garantia</option>
+          </select>
+        </div>
+        <div id="bloco-garantia" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;display:none;flex-direction:column;gap:12px">
+          <div class="field">
+            <label>Supervisor da Garantia</label>
+            <input id="os-sup-garantia" class="input" placeholder="Nome do supervisor">
+          </div>
+          <div class="field">
+            <label>Técnico da Garantia</label>
+            <input id="os-tec-garantia" class="input" placeholder="Nome do técnico da garantia">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field">
+            <label>AT <span style="color:var(--muted);font-weight:400;text-transform:none">(2 letras)</span></label>
+            <input id="os-at" class="input" placeholder="Ex: AB" maxlength="2" style="text-transform:uppercase" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'').toUpperCase()">
+          </div>
+          <div class="field">
+            <label>Cabo <span style="color:var(--muted);font-weight:400;text-transform:none">(2 dígitos)</span></label>
+            <input id="os-cabo" class="input" placeholder="Ex: 12" maxlength="2" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+          </div>
+        </div>
+        <div class="field">
+          <label>Primária <span style="color:var(--muted);font-weight:400;text-transform:none">(até 6 caracteres)</span></label>
+          <input id="os-primaria" class="input" placeholder="Ex: A1B2C3" maxlength="6" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
         </div>
         <div class="field">
           <label>Prioridade</label>
@@ -809,13 +881,25 @@ function renderFotoPreview(){
 
 window.removerFoto = function(i){ novaFotos.splice(i,1); renderFotoPreview(); };
 
+window.toggleGarantia = function(val){
+  const bloco = document.getElementById('bloco-garantia');
+  if(!bloco) return;
+  bloco.style.display = (val==='garantia') ? 'flex' : 'none';
+};
+
 window.criarOS = function(){
-  const tipo = document.getElementById('os-tipo')?.value;
-  const end  = document.getElementById('os-end')?.value?.trim();
-  const desc = document.getElementById('os-desc')?.value?.trim();
-  const sla  = parseInt(document.getElementById('os-sla')?.value)||240;
-  const tec  = document.getElementById('os-tec')?.value||null;
-  const prio = document.getElementById('os-priority')?.value||'normal';
+  const tipo   = document.getElementById('os-tipo')?.value;
+  const end    = document.getElementById('os-end')?.value?.trim();
+  const desc   = document.getElementById('os-desc')?.value?.trim();
+  const sla    = parseInt(document.getElementById('os-sla')?.value)||240;
+  const tec    = document.getElementById('os-tec')?.value||null;
+  const prio   = document.getElementById('os-priority')?.value||'normal';
+  const origem = document.getElementById('os-origem')?.value||'inicial';
+  const supGar = document.getElementById('os-sup-garantia')?.value?.trim()||'';
+  const tecGar = document.getElementById('os-tec-garantia')?.value?.trim()||'';
+  const at     = document.getElementById('os-at')?.value?.trim()||'';
+  const cabo   = document.getElementById('os-cabo')?.value?.trim()||'';
+  const primaria = document.getElementById('os-primaria')?.value?.trim()||'';
   if(!end||!desc){ toast('⚠️ Endereço e descrição são obrigatórios'); return; }
   const nova = {
     id: uid(), tipo, status:'aguardando', priority:prio,
@@ -824,7 +908,9 @@ window.criarOS = function(){
     criadoEm:Date.now(), atribuido:tec?Date.now():null,
     iniciadoEm:null, concluidoEm:null,
     fotos:[...novaFotos], evidencias:[],
-    obs:'', sla, duracaoMin:null
+    obs:'', sla, duracaoMin:null,
+    origem, supervisorGarantia:supGar, tecnicoGarantia:tecGar,
+    at, cabo, primaria
   };
   ordens.unshift(nova); saveOS();
   novaFotos=[];
@@ -860,6 +946,12 @@ window.verRelatorio = function(id){
           <div class="kv"><span>Conclusão</span><strong>${fmtTime(os.concluidoEm)}</strong></div>
           <div class="kv"><span>Técnico Responsável</span><strong>${tec?tec.nome:'—'}</strong></div>
           <div class="kv"><span>Operador</span><strong>${op?op.nome:'—'}</strong></div>
+          ${os.origem?`<div class="kv"><span>Origem</span><strong style="text-transform:capitalize">${os.origem}</strong></div>`:''}
+          ${os.origem==='garantia'&&os.supervisorGarantia?`<div class="kv"><span>Supervisor da Garantia</span><strong>${os.supervisorGarantia}</strong></div>`:''}
+          ${os.origem==='garantia'&&os.tecnicoGarantia?`<div class="kv"><span>Técnico da Garantia</span><strong>${os.tecnicoGarantia}</strong></div>`:''}
+          ${os.at?`<div class="kv"><span>AT</span><strong>${os.at}</strong></div>`:''}
+          ${os.cabo?`<div class="kv"><span>Cabo</span><strong>${os.cabo}</strong></div>`:''}
+          ${os.primaria?`<div class="kv"><span>Primária</span><strong>${os.primaria}</strong></div>`:''}
         </div>
         <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
           <div class="kv"><span>Descrição da Demanda</span><strong style="font-size:13px;font-weight:400;line-height:1.5;margin-top:4px;display:block">${os.descricao}</strong></div>
@@ -874,32 +966,140 @@ window.verRelatorio = function(id){
 
 /* ── DASHBOARD OPERADOR ── */
 function renderOpDash(c){
-  const total=ordens.length, concluidos=ordens.filter(o=>o.status==='concluido'), emCampo=ordens.filter(o=>o.status==='em-campo'), aguardando=ordens.filter(o=>o.status==='aguardando');
+  const total=ordens.length;
+  const concluidos=ordens.filter(o=>o.status==='concluido');
+  const emCampo=ordens.filter(o=>o.status==='em-campo');
+  const demanda=ordens.filter(o=>o.status==='aguardando');
   const slaOk=concluidos.filter(o=>{ const d=o.duracaoMin||elapsed(o.iniciadoEm,o.concluidoEm); return d<=o.sla; }).length;
   const slaPerc = concluidos.length ? Math.round(slaOk/concluidos.length*100) : 0;
 
   const hoje=new Date(), hojeStr=`${hoje.getDate()}/${hoje.getMonth()+1}`;
+
+  // Produção por técnico (hoje)
+  const hojeInicio = new Date(); hojeInicio.setHours(0,0,0,0);
+  const tecList = USUARIOS.filter(u=>u.perfil==='tecnico');
+  const tecStats = tecList.map(t=>{
+    const minhasOS = ordens.filter(o=>o.tecnico===t.id);
+    const hoje_os  = minhasOS.filter(o=>o.criadoEm>=hojeInicio.getTime());
+    const concHoje = hoje_os.filter(o=>o.status==='concluido');
+    const emC      = minhasOS.find(o=>o.status==='em-campo');
+    const atrib    = minhasOS.filter(o=>o.status==='aguardando');
+    const tempoAcum= concluidos.filter(o=>o.tecnico===t.id).reduce((a,o)=>a+(o.duracaoMin||elapsed(o.iniciadoEm,o.concluidoEm)||0),0);
+    return {...t, totalOS:minhasOS.length, hojeConc:concHoje.length, hojeOS:hoje_os.length, emCampo:emC||null, atribuidas:atrib.length, tempoAcum};
+  });
+
+  // Quantidade por AT
+  const atCount={};
+  ordens.forEach(o=>{ if(o.at){ atCount[o.at]=(atCount[o.at]||0)+1; } });
+  const maxAt=Math.max(...Object.values(atCount),1);
+
+  // Por tipo
   const tipoCount={};
   ordens.forEach(o=>{ tipoCount[o.tipo]=(tipoCount[o.tipo]||0)+1; });
   const maxTipo=Math.max(...Object.values(tipoCount),1);
 
-  const tecStats = USUARIOS.filter(u=>u.perfil==='tecnico').map(t=>({
-    ...t, ativas:ordens.filter(o=>o.tecnico===t.id&&o.status==='em-campo').length,
-    total:ordens.filter(o=>o.tecnico===t.id).length
-  }));
-
   c.innerHTML = `
     <div class="page-header"><h2>Dashboard</h2><p>Visão geral operacional — ${hojeStr}</p></div>
     <div class="page-content">
+
       <div class="dash-section">
         <h3>Status Geral</h3>
         <div class="stats-row">
-          <div class="stat-card"><div class="stat-n accent">${aguardando.length}</div><div class="stat-l">Aguardando</div></div>
-          <div class="stat-card"><div class="stat-n" style="color:var(--info)">${emCampo.length}</div><div class="stat-l">Em Campo</div></div>
-          <div class="stat-card"><div class="stat-n ok">${concluidos.length}</div><div class="stat-l">Concluídos</div></div>
-          <div class="stat-card"><div class="stat-n">${total}</div><div class="stat-l">Total</div></div>
+          <div class="stat-card" style="cursor:pointer" onclick="irParaLista('aguardando')">
+            <div class="stat-n accent">${demanda.length}</div>
+            <div class="stat-l">Demanda</div>
+            <div class="stat-sub" style="color:var(--accent);font-size:10px">▶ ver ordens</div>
+          </div>
+          <div class="stat-card" style="cursor:pointer" onclick="irParaLista('em-campo')">
+            <div class="stat-n" style="color:var(--info)">${emCampo.length}</div>
+            <div class="stat-l">Em Campo</div>
+            <div class="stat-sub" style="color:var(--info);font-size:10px">▶ ver ordens</div>
+          </div>
+          <div class="stat-card" style="cursor:pointer" onclick="irParaLista('concluido')">
+            <div class="stat-n ok">${concluidos.length}</div>
+            <div class="stat-l">Concluídos</div>
+            <div class="stat-sub" style="color:var(--ok);font-size:10px">▶ ver ordens</div>
+          </div>
+          <div class="stat-card" style="cursor:pointer" onclick="irParaLista('todos')">
+            <div class="stat-n">${total}</div>
+            <div class="stat-l">Total</div>
+            <div class="stat-sub" style="color:var(--muted);font-size:10px">▶ ver todas</div>
+          </div>
         </div>
       </div>
+
+      <div class="dash-section">
+        <h3>Status dos Técnicos</h3>
+        <div class="card">
+          ${tecStats.map((t,i)=>{
+            const osAtual = t.emCampo ? ordens.find(o=>o.id===t.emCampo.id) : null;
+            const statusTxt = t.emCampo ? `🔵 Em campo — ${t.emCampo.tipo}` : t.atribuidas>0 ? `🟡 ${t.atribuidas} OS em demanda` : '⚪ Livre';
+            const statusColor = t.emCampo ? 'var(--info)' : t.atribuidas>0 ? 'var(--warn)' : 'var(--muted)';
+            return `
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;${i>0?'border-top:1px solid var(--border)':''}">
+              <div class="profile-avatar" style="background:${t.cor}20;color:${t.cor};width:36px;height:36px;flex-shrink:0">${t.iniciais}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:700">${t.nome}</div>
+                <div style="font-size:11px;color:${statusColor};margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${statusTxt}</div>
+                ${t.emCampo?`<div style="font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📍 ${t.emCampo.endereco}</div>`:''}
+              </div>
+              <div style="text-align:right;flex-shrink:0">
+                <div style="font-size:15px;font-weight:700">${t.hojeConc}</div>
+                <div style="font-size:10px;color:var(--muted)">hoje</div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <h3>Produção por Técnico — Hoje</h3>
+        <div class="chart-wrap">
+          ${tecStats.length ? tecStats.map(t=>`
+            <div class="bar-row">
+              <div class="bar-label" style="display:flex;align-items:center;gap:6px">
+                <div style="width:20px;height:20px;border-radius:50%;background:${t.cor}25;color:${t.cor};font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${t.iniciais}</div>
+                <span style="font-size:10px;line-height:1.2">${t.nome.split(' ')[0]}</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" style="width:${t.hojeOS?Math.round(t.hojeConc/(t.hojeOS||1)*100):0}%;background:${t.cor}"></div></div>
+              <div class="bar-val">${t.hojeConc}/${t.hojeOS}</div>
+            </div>
+          `).join('') : '<p style="color:var(--muted);font-size:13px">Nenhum técnico cadastrado</p>'}
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <h3>Tempo Acumulado por Técnico</h3>
+        <div class="chart-wrap">
+          ${(()=>{
+            const maxT=Math.max(...tecStats.map(t=>t.tempoAcum),1);
+            return tecStats.map(t=>`
+              <div class="bar-row">
+                <div class="bar-label" style="display:flex;align-items:center;gap:6px">
+                  <div style="width:20px;height:20px;border-radius:50%;background:${t.cor}25;color:${t.cor};font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${t.iniciais}</div>
+                  <span style="font-size:10px;line-height:1.2">${t.nome.split(' ')[0]}</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" style="width:${Math.round(t.tempoAcum/maxT*100)}%;background:${t.cor}"></div></div>
+                <div class="bar-val">${t.tempoAcum?fmtElapsed(t.tempoAcum):'—'}</div>
+              </div>
+            `).join('');
+          })()}
+        </div>
+      </div>
+
+      ${Object.keys(atCount).length ? `
+      <div class="dash-section">
+        <h3>Atividades por AT</h3>
+        <div class="chart-wrap">
+          ${Object.entries(atCount).sort((a,b)=>b[1]-a[1]).map(([at,n])=>`
+            <div class="bar-row">
+              <div class="bar-label" style="font-family:var(--mono);font-weight:700;font-size:13px">${at}</div>
+              <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxAt*100)}%;background:var(--accent)"></div></div>
+              <div class="bar-val">${n}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
 
       <div class="dash-section">
         <h3>SLA</h3>
@@ -922,9 +1122,9 @@ function renderOpDash(c){
       <div class="dash-section">
         <h3>Por Tipo de Serviço</h3>
         <div class="chart-wrap">
-          ${Object.entries(tipoCount).map(([tipo,n])=>`
+          ${Object.entries(tipoCount).sort((a,b)=>b[1]-a[1]).map(([tipo,n])=>`
             <div class="bar-row">
-              <div class="bar-label">${tipo.split(' ')[0]}<br><span style="font-size:9px">${tipo.split(/[\s\/]/)[1]||''}</span></div>
+              <div class="bar-label" style="font-size:10px;line-height:1.3">${tipo}</div>
               <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxTipo*100)}%;background:var(--accent)"></div></div>
               <div class="bar-val">${n}</div>
             </div>
@@ -932,44 +1132,19 @@ function renderOpDash(c){
         </div>
       </div>
 
-      <div class="dash-section">
-        <h3>Técnicos</h3>
-        <div class="card">
-          ${tecStats.map((t,i)=>`
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;${i>0?'border-top:1px solid var(--border)':''}">
-              <div class="profile-avatar" style="background:${t.cor}20;color:${t.cor};width:36px;height:36px;flex-shrink:0">${t.iniciais}</div>
-              <div style="flex:1">
-                <div style="font-size:13px;font-weight:600">${t.nome}</div>
-                <div style="font-size:11px;color:var(--muted)">${t.total} OS total</div>
-              </div>
-              <div style="text-align:right">
-                <div style="font-size:16px;font-weight:700;color:${t.ativas>0?'var(--info)':'var(--muted)'}">${t.ativas}</div>
-                <div style="font-size:10px;color:var(--muted)">em campo</div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-
-      <div class="dash-section">
-        <h3>Tempo Médio por Tipo</h3>
-        <div class="chart-wrap">
-          ${['Reparo de Fibra (Corte/Fusão)','Emergência / SLA Crítico','Apoio a Outro Técnico'].map(tipo=>{
-            const concTipo=concluidos.filter(o=>o.tipo===tipo);
-            const media=concTipo.length?Math.round(concTipo.reduce((a,o)=>a+(o.duracaoMin||elapsed(o.iniciadoEm,o.concluidoEm)),0)/concTipo.length):0;
-            const maxSla=concTipo.length?concTipo[0].sla:240;
-            return `
-              <div class="bar-row">
-                <div class="bar-label">${tipo.split(' ')[0]}</div>
-                <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,Math.round(media/maxSla*100))}%;background:${media>maxSla?'var(--danger)':'var(--ok)'}"></div></div>
-                <div class="bar-val">${media?fmtElapsed(media):'—'}</div>
-              </div>`;
-          }).join('')}
-        </div>
-      </div>
     </div>
   `;
 }
+
+window.irParaLista = function(filtro){
+  opTab='lista';
+  renderOpContent();
+  // aguarda render e aplica filtro
+  setTimeout(()=>{
+    const btn = document.querySelector(`.chip-filter-btn[data-f="${filtro}"]`);
+    if(btn){ document.querySelectorAll('.chip-filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); listaFiltro=filtro; renderListaBody(); }
+  },50);
+};
 
 /* ═══════════════════════════════════════════════════════════
    GESTÃO DE USUÁRIOS
@@ -1144,6 +1319,39 @@ window.excluirUsuario = function(uid){
   USUARIOS.splice(i,1); saveUsers(); closeModal();
   toast('🗑️ Usuário removido');
   renderAdminUsuarios(document.getElementById('op-content'));
+};
+
+window.confirmarExcluirOS = function(osId){
+  const os = getOS(osId); if(!os) return;
+  const mc = document.getElementById('modal-container');
+  mc.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title" style="color:var(--danger)">Excluir Ordem de Serviço</div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px">${os.id}</div>
+          <div style="font-size:14px;font-weight:600">${os.tipo}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">${os.endereco}</div>
+        </div>
+        <p style="font-size:13px;color:var(--muted)">Esta ação não pode ser desfeita. A ordem será removida permanentemente.</p>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-danger btn-full" onclick="excluirOS('${osId}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Excluir
+          </button>
+          <button class="btn btn-outline btn-full" onclick="closeModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+window.excluirOS = function(osId){
+  const i = ordens.findIndex(o=>o.id===osId); if(i<0) return;
+  ordens.splice(i,1); saveOS(); closeModal();
+  toast('🗑️ OS removida');
+  renderOpContent();
 };
 
 /* ═══════════════════════════════════════════════════════════
