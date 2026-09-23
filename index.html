@@ -1,0 +1,1498 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>FieldOps Fibra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+/* ── TOKENS ─────────────────────────────────────────────── */
+:root {
+  --bg:        #0F172A;
+  --surface:   #1E293B;
+  --surface2:  #273448;
+  --border:    #334155;
+  --text:      #F1F5F9;
+  --muted:     #94A3B8;
+  --accent:    #F97316;
+  --accent-lo: rgba(249,115,22,.12);
+  --ok:        #22C55E;
+  --ok-lo:     rgba(34,197,94,.12);
+  --warn:      #FBBF24;
+  --warn-lo:   rgba(251,191,36,.12);
+  --danger:    #EF4444;
+  --danger-lo: rgba(239,68,68,.12);
+  --info:      #38BDF8;
+  --info-lo:   rgba(56,189,248,.12);
+  --radius:    10px;
+  --font:      'IBM Plex Sans', system-ui, sans-serif;
+  --mono:      'IBM Plex Mono', monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:       #F1F5F9;
+    --surface:  #FFFFFF;
+    --surface2: #F8FAFC;
+    --border:   #E2E8F0;
+    --text:     #0F172A;
+    --muted:    #64748B;
+  }
+}
+:root[data-theme="light"] {
+  --bg:       #F1F5F9;
+  --surface:  #FFFFFF;
+  --surface2: #F8FAFC;
+  --border:   #E2E8F0;
+  --text:     #0F172A;
+  --muted:    #64748B;
+}
+
+/* ── RESET ───────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:var(--font);font-size:14px;color:var(--text);background:var(--bg);overflow:hidden}
+button{cursor:pointer;border:none;background:none;font-family:inherit;color:inherit}
+input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;outline:none}
+img{max-width:100%;display:block}
+
+/* ── UTILITIES ───────────────────────────────────────────── */
+.hidden{display:none!important}
+.mono{font-family:var(--mono)}
+.ok{color:var(--ok)} .warn{color:var(--warn)} .danger{color:var(--danger)} .accent{color:var(--accent)} .muted{color:var(--muted)}
+
+/* ── SCREEN STACK ────────────────────────────────────────── */
+#app{height:100%;display:flex;flex-direction:column}
+.screen{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+
+/* ── LOGIN ───────────────────────────────────────────────── */
+#screen-login{align-items:center;justify-content:center;gap:32px;padding:32px 20px}
+.login-logo{display:flex;align-items:center;gap:12px}
+.login-logo svg{width:40px;height:40px}
+.login-logo h1{font-size:22px;font-weight:700;letter-spacing:-.5px}
+.login-logo span{color:var(--accent)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:20px}
+.login-card h2{font-size:16px;font-weight:600}
+.login-profiles{display:grid;gap:10px}
+.profile-btn{display:flex;align-items:center;gap:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;transition:.15s}
+.profile-btn:hover{border-color:var(--accent);background:var(--accent-lo)}
+.profile-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.profile-info{text-align:left}
+.profile-info strong{display:block;font-size:14px;font-weight:600}
+.profile-info small{color:var(--muted);font-size:12px}
+
+/* ── TOP BAR ─────────────────────────────────────────────── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:env(safe-area-inset-top,0px)}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-logo{font-weight:700;font-size:15px;letter-spacing:-.3px}
+.topbar-logo span{color:var(--accent)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.icon-btn{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:.15s}
+.icon-btn:hover{background:var(--surface2);color:var(--text)}
+.avatar-sm{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.badge-count{background:var(--danger);color:#fff;font-size:10px;font-weight:700;border-radius:99px;padding:1px 5px;min-width:16px;text-align:center}
+
+/* ── BOTTOM NAV (mobile) ─────────────────────────────────── */
+.bottom-nav{background:var(--surface);border-top:1px solid var(--border);display:flex;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,0px)}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;color:var(--muted);font-size:10px;font-weight:500;transition:.15s;position:relative}
+.bnav-item.active{color:var(--accent)}
+.bnav-item svg{width:20px;height:20px}
+.bnav-dot{position:absolute;top:6px;right:calc(50% - 16px);width:7px;height:7px;background:var(--danger);border-radius:50%;border:2px solid var(--surface)}
+
+/* ── PAGE SHELL ──────────────────────────────────────────── */
+.page-header{padding:16px 16px 8px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)}
+.page-header h2{font-size:17px;font-weight:700}
+.page-header p{color:var(--muted);font-size:12px;margin-top:2px}
+.page-content{flex:1;overflow-y:auto;padding:16px}
+.page-content.no-pad{padding:0}
+
+/* ── FORMS ───────────────────────────────────────────────── */
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.input{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;width:100%;transition:.15s;color:var(--text)}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-lo)}
+textarea.input{resize:vertical;min-height:72px}
+select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+
+/* ── BUTTONS ─────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;transition:.15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#ea6c0a}
+.btn-outline{border:1px solid var(--border);color:var(--text);background:var(--surface)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-full{width:100%}
+.btn-ok{background:var(--ok);color:#fff}
+.btn-ok:hover{background:#16a34a}
+
+/* ── CARDS & LISTS ───────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.card-body{padding:14px}
+.card + .card{margin-top:10px}
+
+.os-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;margin-bottom:10px}
+.os-card-head{padding:12px 14px;display:flex;align-items:center;gap:10px}
+.os-card-body{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
+.os-card-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.os-meta-item{font-size:11px;color:var(--muted)}
+.os-meta-item strong{display:block;font-size:13px;color:var(--text);font-weight:500}
+.os-card-actions{display:flex;gap:8px;margin-top:4px}
+
+/* ── STATUS CHIPS ────────────────────────────────────────── */
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:600}
+.chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.8}
+.chip-aguardando{background:var(--warn-lo);color:var(--warn)}
+.chip-em-campo{background:var(--info-lo);color:var(--info)}
+.chip-concluido{background:var(--ok-lo);color:var(--ok)}
+.chip-emergencia{background:var(--danger-lo);color:var(--danger)}
+.chip-apoio{background:var(--accent-lo);color:var(--accent)}
+
+/* ── PRIORITY STRIPE ─────────────────────────────────────── */
+.os-card[data-priority="emergencia"]{border-left:3px solid var(--danger)}
+.os-card[data-priority="normal"]{border-left:3px solid var(--accent)}
+.os-card[data-priority="apoio"]{border-left:3px solid var(--info)}
+
+/* ── PHOTO UPLOAD ZONE ───────────────────────────────────── */
+.photo-zone{border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:.15s;background:var(--surface);position:relative;overflow:hidden}
+.photo-zone:hover{border-color:var(--accent);background:var(--accent-lo)}
+.photo-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.photo-zone-icon{font-size:28px;margin-bottom:6px}
+.photo-zone p{font-size:12px;color:var(--muted)}
+.photo-preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.photo-preview-item{aspect-ratio:1;border-radius:6px;overflow:hidden;position:relative;background:var(--surface2)}
+.photo-preview-item img{width:100%;height:100%;object-fit:cover}
+.photo-preview-item button{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.7);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;line-height:18px;text-align:center}
+
+/* ── STATS ROW ───────────────────────────────────────────── */
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:500px){.stats-row{grid-template-columns:repeat(4,1fr)}}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.stat-card .stat-n{font-size:26px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.stat-card .stat-l{font-size:11px;color:var(--muted);margin-top:4px}
+.stat-card .stat-sub{font-size:11px;margin-top:6px}
+
+/* ── CHART ───────────────────────────────────────────────── */
+.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.chart-wrap h3{font-size:13px;font-weight:600;margin-bottom:12px}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bar-label{width:80px;font-size:11px;color:var(--muted);text-align:right;flex-shrink:0}
+.bar-track{flex:1;background:var(--surface2);border-radius:99px;height:10px;overflow:hidden}
+.bar-fill{height:100%;border-radius:99px;transition:.6s}
+.bar-val{width:32px;font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted)}
+
+/* ── DETAIL PANEL ────────────────────────────────────────── */
+.detail-panel{display:flex;flex-direction:column;height:100%}
+.detail-section{padding:14px;border-bottom:1px solid var(--border)}
+.detail-section h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px}
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv{display:flex;flex-direction:column;gap:2px}
+.kv span{font-size:11px;color:var(--muted)}
+.kv strong{font-size:13px}
+.evidence-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.evidence-img{aspect-ratio:1;border-radius:6px;overflow:hidden;background:var(--surface2)}
+.evidence-img img{width:100%;height:100%;object-fit:cover}
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:12px;position:relative;padding-bottom:14px}
+.tl-item:last-child{padding-bottom:0}
+.tl-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:3px;position:relative;z-index:1}
+.tl-item::before{content:'';position:absolute;left:4px;top:13px;bottom:0;width:2px;background:var(--border)}
+.tl-item:last-child::before{display:none}
+.tl-body{flex:1}
+.tl-body strong{font-size:13px;font-weight:600;display:block}
+.tl-body span{font-size:11px;color:var(--muted)}
+
+/* ── REPORT ──────────────────────────────────────────────── */
+.report-header{background:linear-gradient(135deg,#F97316 0%,#C2410C 100%);color:#fff;padding:20px 16px}
+.report-header h2{font-size:18px;font-weight:700}
+.report-header p{font-size:12px;opacity:.8;margin-top:2px}
+.report-id{font-family:var(--mono);font-size:11px;opacity:.7;margin-bottom:8px}
+
+/* ── MODAL OVERLAY ───────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;z-index:100;backdrop-filter:blur(4px)}
+.modal-sheet{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:20px 16px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto -4px}
+.modal-title{font-size:17px;font-weight:700}
+.form-stack{display:flex;flex-direction:column;gap:14px}
+
+/* ── TECH MOBILE VIEW ────────────────────────────────────── */
+.my-os-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;position:relative}
+.my-os-card[data-priority="emergencia"]{border-left:3px solid var(--danger)}
+.my-os-card[data-priority="normal"]{border-left:3px solid var(--accent)}
+.my-os-card[data-priority="apoio"]{border-left:3px solid var(--info)}
+.os-id{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px}
+.os-type-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.os-type-row strong{font-size:15px;font-weight:700;flex:1}
+.os-address{font-size:12px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.os-desc{font-size:13px;margin-bottom:10px}
+.demand-img{border-radius:8px;overflow:hidden;background:var(--surface2);max-height:160px;margin-bottom:10px;display:flex;align-items:center;justify-content:center}
+.demand-img img{width:100%;max-height:160px;object-fit:cover}
+
+/* ── BAIXA FORM ──────────────────────────────────────────── */
+.action-bar{display:flex;gap:8px;flex-wrap:wrap}
+.timer-display{background:var(--surface2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+.timer-val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent)}
+.timer-label{font-size:11px;color:var(--muted)}
+
+/* ── DASHBOARD ───────────────────────────────────────────── */
+.dash-section{margin-bottom:18px}
+.dash-section h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px}
+.sla-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;margin-top:8px;gap:2px}
+.sla-seg{height:100%;border-radius:99px}
+.legend-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+
+/* ── SCROLLBAR ───────────────────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+#toast{position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:8px 18px;font-size:13px;font-weight:500;z-index:200;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+
+<div id="app">
+  <!-- ── SCREENS ── -->
+  <div id="screen-login" class="screen"></div>
+  <div id="screen-operador" class="screen hidden"></div>
+  <div id="screen-tecnico" class="screen hidden"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════ */
+const USUARIOS_DEFAULT = [
+  {id:'adm1', nome:'Marcus Maia', perfil:'admin', iniciais:'MM', cor:'#F59E0B'},
+  {id:'op1', nome:'Ana Rodrigues', perfil:'operador', iniciais:'AR', cor:'#7C3AED'},
+  {id:'op2', nome:'Carlos Mendes', perfil:'operador', iniciais:'CM', cor:'#0891B2'},
+  {id:'tc1', nome:'João Silva', perfil:'tecnico', iniciais:'JS', cor:'#F97316'},
+  {id:'tc2', nome:'Pedro Costa', perfil:'tecnico', iniciais:'PC', cor:'#22C55E'},
+  {id:'tc3', nome:'Rafael Lima', perfil:'tecnico', iniciais:'RL', cor:'#EF4444'},
+];
+function loadUsers(){ try{ const d=localStorage.getItem('fieldops_users'); if(d) return JSON.parse(d); }catch(e){} return USUARIOS_DEFAULT.map(u=>({...u})); }
+function saveUsers(){ try{ localStorage.setItem('fieldops_users', JSON.stringify(USUARIOS)); }catch(e){} }
+let USUARIOS = loadUsers();
+
+let currentUser = null;
+let ordens = loadOS();
+let activeOSId = null;
+let timers = {};
+
+function loadOS(){
+  try{const d=localStorage.getItem('fieldops_os');if(d)return JSON.parse(d)}catch(e){}
+  return generateSampleOS();
+}
+function saveOS(){try{localStorage.setItem('fieldops_os',JSON.stringify(ordens))}catch(e){}}
+
+function generateSampleOS(){
+  const agora = Date.now();
+  const h = 3600000;
+  return [
+    {
+      id:'OS-2024-001', tipo:'Reparo de Fibra (Corte/Fusão)',
+      status:'concluido', priority:'normal',
+      endereco:'Av. Brasil, 1450 - Galpão Industrial, SP',
+      descricao:'Cabo de fibra rompido por obra de terceiros. Necessário fusão de 4 pontas.',
+      tecnico:'tc1', operador:'op1',
+      criadoEm: agora - 5*h, atribuido: agora - 4.8*h, iniciadoEm: agora - 4.5*h, concluidoEm: agora - 3.8*h,
+      fotos:[], evidencias:[],
+      obs:'Fusões realizadas com sucesso. Perda óptica dentro do padrão. Cliente notificado.',
+      sla: 240, duracaoMin: 42
+    },
+    {
+      id:'OS-2024-002', tipo:'Emergência / SLA Crítico',
+      status:'em-campo', priority:'emergencia',
+      endereco:'Rua das Palmeiras, 80 - Data Center Norte, SP',
+      descricao:'Link principal do data center sem sinal. Afeta 12 clientes corporativos.',
+      tecnico:'tc2', operador:'op1',
+      criadoEm: agora - 2*h, atribuido: agora - 1.9*h, iniciadoEm: agora - 1.5*h, concluidoEm:null,
+      fotos:[], evidencias:[],
+      obs:'', sla: 60, duracaoMin:null
+    },
+    {
+      id:'OS-2024-003', tipo:'Reparo de Fibra (Corte/Fusão)',
+      status:'aguardando', priority:'normal',
+      endereco:'Rua Independência, 320 - Residencial Jardins, SP',
+      descricao:'Cliente sem internet. Verificar CTO e ramal de entrada.',
+      tecnico:null, operador:'op1',
+      criadoEm: agora - 1*h, atribuido:null, iniciadoEm:null, concluidoEm:null,
+      fotos:[], evidencias:[],
+      obs:'', sla: 240, duracaoMin:null
+    },
+    {
+      id:'OS-2024-004', tipo:'Apoio a Outro Técnico',
+      status:'aguardando', priority:'apoio',
+      endereco:'Av. Paulista, 900 - Bela Vista, SP',
+      descricao:'Suporte especializado em OTDR para mapeamento de falhas em backbone.',
+      tecnico:null, operador:'op2',
+      criadoEm: agora - 0.5*h, atribuido:null, iniciadoEm:null, concluidoEm:null,
+      fotos:[], evidencias:[],
+      obs:'', sla: 120, duracaoMin:null
+    },
+    {
+      id:'OS-2024-005', tipo:'Emergência / SLA Crítico',
+      status:'concluido', priority:'emergencia',
+      endereco:'Rua XV de Novembro, 55 - Centro, SP',
+      descricao:'Queda total de link. Identificado corte por vandalismo na CTO externa.',
+      tecnico:'tc3', operador:'op2',
+      criadoEm: agora - 8*h, atribuido: agora - 7.9*h, iniciadoEm: agora - 7.5*h, concluidoEm: agora - 6.5*h,
+      fotos:[], evidencias:[],
+      obs:'CTO substituída. Fusões realizadas. Sinal normalizado. Fotos anexadas.',
+      sla: 60, duracaoMin: 60
+    }
+  ];
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════════ */
+function uid(){ return 'OS-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*900)+100) }
+function fmtTime(ts){ if(!ts) return '—'; const d=new Date(ts); return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) }
+function fmtDate(ts){ if(!ts) return '—'; const d=new Date(ts); return d.toLocaleDateString('pt-BR') }
+function fmtDateTime(ts){ if(!ts) return '—'; const d=new Date(ts); return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) }
+function elapsed(from,to){ if(!from) return 0; const ms=(to||Date.now())-from; return Math.floor(ms/60000) }
+function fmtElapsed(min){ if(!min&&min!==0) return '—'; const h=Math.floor(min/60),m=min%60; return h>0?`${h}h${m.toString().padStart(2,'0')}min`:`${m}min` }
+function getUser(id){ return USUARIOS.find(u=>u.id===id)||null }
+function getOS(id){ return ordens.find(o=>o.id===id) }
+function statusLabel(s){ return {aguardando:'Aguardando',['em-campo']:'Em Campo',concluido:'Concluído',emergencia:'Emergência',apoio:'Apoio'}[s]||s }
+function chipClass(s){ return {aguardando:'chip-aguardando',['em-campo']:'chip-em-campo',concluido:'chip-concluido',emergencia:'chip-emergencia',apoio:'chip-apoio'}[s]||'' }
+
+function toast(msg, dur=2500){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), dur);
+}
+
+function avatar(user, size='sm'){
+  if(!user) return `<div class="avatar-${size}" style="background:#334155;color:#94A3B8">?</div>`;
+  return `<div class="avatar-${size}" style="background:${user.cor}20;color:${user.cor};border:1px solid ${user.cor}40">${user.iniciais}</div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════════════════════ */
+function renderLogin(){
+  const s = document.getElementById('screen-login');
+  s.innerHTML = `
+    <div class="login-logo">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="10" fill="#F97316"/>
+        <path d="M8 20h5M27 20h5M13 20c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7-7-3.13-7-7z" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="20" cy="20" r="3" fill="#fff"/>
+      </svg>
+      <h1>Field<span>Ops</span> Fibra</h1>
+    </div>
+    <div class="login-card">
+      <h2>Escolha seu perfil</h2>
+      <div class="login-profiles">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Administrador</div>
+        ${USUARIOS.filter(u=>u.perfil==='admin').map(u=>`
+          <button class="profile-btn" onclick="login('${u.id}')" style="border-color:${u.cor}40;background:${u.cor}0d">
+            <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor}">${u.iniciais}</div>
+            <div class="profile-info"><strong>${u.nome}</strong><small>Administrador • Acesso Total</small></div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${u.cor}" stroke-width="2" style="flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </button>
+        `).join('')}
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:4px">Operadores</div>
+        ${USUARIOS.filter(u=>u.perfil==='operador').map(u=>`
+          <button class="profile-btn" onclick="login('${u.id}')">
+            <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor}">${u.iniciais}</div>
+            <div class="profile-info"><strong>${u.nome}</strong><small>Painel de Despacho</small></div>
+          </button>
+        `).join('')}
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:4px">Técnicos de Campo</div>
+        ${USUARIOS.filter(u=>u.perfil==='tecnico').map(u=>`
+          <button class="profile-btn" onclick="login('${u.id}')">
+            <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor}">${u.iniciais}</div>
+            <div class="profile-info"><strong>${u.nome}</strong><small>App de Campo</small></div>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--muted)">Demo • Dados salvos no navegador</p>
+  `;
+}
+
+function login(uid){
+  currentUser = USUARIOS.find(u=>u.id===uid) || USUARIOS[0];
+  document.getElementById('screen-login').classList.add('hidden');
+  if(currentUser.perfil==='admin' || currentUser.perfil==='operador'){
+    document.getElementById('screen-operador').classList.remove('hidden');
+    renderOperador();
+  } else {
+    document.getElementById('screen-tecnico').classList.remove('hidden');
+    renderTecnico();
+  }
+}
+
+function logout(){
+  currentUser=null; activeOSId=null;
+  Object.values(timers).forEach(t=>clearInterval(t)); timers={};
+  ['screen-operador','screen-tecnico'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('screen-login').classList.remove('hidden');
+  renderLogin();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   OPERADOR
+═══════════════════════════════════════════════════════════ */
+let opTab = 'lista';
+function renderOperador(){
+  const s = document.getElementById('screen-operador');
+  s.innerHTML = `
+    <div class="topbar">
+      <div class="topbar-left">
+        <svg width="24" height="24" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#F97316"/><path d="M8 20h5M27 20h5M13 20c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7-7-3.13-7-7z" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="20" cy="20" r="3" fill="#fff"/></svg>
+        <span class="topbar-logo">Field<span>Ops</span></span>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" onclick="renderOperador()" title="Atualizar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 12a9 9 0 0115-6.7L21 8M3 22v-6h6M21 12a9 9 0 01-15 6.7L3 16"/></svg>
+        </button>
+        <button onclick="exportarExcel()" title="Exportar para Excel" style="display:flex;align-items:center;gap:5px;background:${currentUser.perfil==='admin'?'var(--ok)':'var(--surface2)'};color:${currentUser.perfil==='admin'?'#fff':'var(--muted)'};border:1px solid ${currentUser.perfil==='admin'?'var(--ok)':'var(--border)'};border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;transition:.15s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Excel
+        </button>
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--surface2);border-radius:8px;cursor:pointer;border:1px solid ${currentUser.perfil==='admin'?currentUser.cor+'40':'var(--border)'}" onclick="logout()">
+          <div class="avatar-sm" style="background:${currentUser.cor}20;color:${currentUser.cor}">${currentUser.iniciais}</div>
+          <div style="display:flex;flex-direction:column">
+            <span style="font-size:12px;font-weight:600;line-height:1.1">${currentUser.nome.split(' ')[0]}</span>
+            ${currentUser.perfil==='admin'?`<span style="font-size:9px;color:${currentUser.cor};font-weight:700;letter-spacing:.5px">ADMIN</span>`:''}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="bnav-item ${opTab==='lista'?'active':''}" onclick="opTab='lista';renderOpContent()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Ordens
+        ${ordens.filter(o=>o.status==='aguardando').length>0?`<span class="bnav-dot"></span>`:''}
+      </button>
+      <button class="bnav-item ${opTab==='nova'?'active':''}" onclick="opTab='nova';renderOpContent()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Nova OS
+      </button>
+      <button class="bnav-item ${opTab==='dash'?'active':''}" onclick="opTab='dash';renderOpContent()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-5"/></svg>
+        Dashboard
+      </button>
+      ${currentUser.perfil==='admin'?`
+      <button class="bnav-item ${opTab==='usuarios'?'active':''}" onclick="opTab='usuarios';renderOpContent()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Usuários
+      </button>
+      <button class="bnav-item ${opTab==='admin'?'active':''}" onclick="opTab='admin';renderOpContent()" style="${opTab==='admin'?'color:var(--warn)':''}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Admin
+      </button>`:''}
+    </div>
+    <div id="op-content" style="flex:1;overflow-y:auto;display:flex;flex-direction:column"></div>
+    <div id="modal-container"></div>
+  `;
+  renderOpContent();
+}
+
+function renderOpContent(){
+  document.querySelectorAll('.bnav-item').forEach(b=>{
+    b.className='bnav-item'+(b.getAttribute('onclick').includes(`'${opTab}'`)?' active':'');
+  });
+  const c = document.getElementById('op-content');
+  if(!c) return;
+  if(opTab==='lista') renderOpLista(c);
+  else if(opTab==='nova') renderOpNova(c);
+  else if(opTab==='admin') renderAdminPanel(c);
+  else if(opTab==='usuarios') renderAdminUsuarios(c);
+  else renderOpDash(c);
+}
+
+/* ── LISTA DE OS ── */
+function renderOpLista(c){
+  let filtro = 'todos';
+  c.innerHTML = `
+    <div class="page-header">
+      <h2>Ordens de Serviço</h2>
+      <p>${ordens.length} ordens • ${ordens.filter(o=>o.status==='aguardando').length} aguardando atribuição</p>
+    </div>
+    <div style="padding:10px 16px;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid var(--border)">
+      <button class="btn btn-sm chip-filter-btn active" data-f="todos" onclick="setFiltro('todos',this)">Todos (${ordens.length})</button>
+      <button class="btn btn-sm chip-filter-btn" data-f="aguardando" onclick="setFiltro('aguardando',this)">Aguardando (${ordens.filter(o=>o.status==='aguardando').length})</button>
+      <button class="btn btn-sm chip-filter-btn" data-f="em-campo" onclick="setFiltro('em-campo',this)">Em Campo (${ordens.filter(o=>o.status==='em-campo').length})</button>
+      <button class="btn btn-sm chip-filter-btn" data-f="concluido" onclick="setFiltro('concluido',this)">Concluídos (${ordens.filter(o=>o.status==='concluido').length})</button>
+    </div>
+    <div class="page-content" id="lista-body"></div>
+  `;
+  renderListaBody('todos');
+  // inject filter btn styles
+  const style = document.createElement('style');
+  style.textContent=`.chip-filter-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:99px;white-space:nowrap}.chip-filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}`;
+  c.prepend(style);
+}
+
+window.setFiltro = function(f, btn){
+  document.querySelectorAll('.chip-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderListaBody(f);
+};
+
+function renderListaBody(f){
+  const body = document.getElementById('lista-body'); if(!body) return;
+  const lista = f==='todos' ? ordens : ordens.filter(o=>o.status===f);
+  if(lista.length===0){body.innerHTML='<p style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px">Nenhuma ordem</p>';return;}
+  body.innerHTML = lista.map(os=>{
+    const tec = getUser(os.tecnico);
+    const elapsedMin = os.iniciadoEm ? elapsed(os.iniciadoEm, os.concluidoEm||undefined) : null;
+    const slaOk = elapsedMin===null || elapsedMin<=os.sla;
+    return `
+    <div class="os-card" data-priority="${os.priority}">
+      <div class="os-card-head">
+        <div style="flex:1">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:3px">${os.id}</div>
+          <div style="font-size:14px;font-weight:700">${os.tipo}</div>
+        </div>
+        <span class="chip ${chipClass(os.status)}">${statusLabel(os.status)}</span>
+      </div>
+      <div class="os-card-body">
+        <div style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          ${os.endereco}
+        </div>
+        <div class="os-card-meta">
+          <div class="os-meta-item"><span>Criado</span><strong>${fmtDateTime(os.criadoEm)}</strong></div>
+          <div class="os-meta-item"><span>Técnico</span><strong>${tec?tec.nome:'Não atribuído'}</strong></div>
+          <div class="os-meta-item"><span>SLA</span><strong>${os.sla}min</strong></div>
+          <div class="os-meta-item"><span>Duração</span><strong class="${elapsedMin!==null&&!slaOk?'danger':'ok'}">${fmtElapsed(elapsedMin||os.duracaoMin)}</strong></div>
+        </div>
+        <div class="os-card-actions">
+          <button class="btn btn-outline btn-sm" onclick="verOS('${os.id}')">Ver Detalhes</button>
+          ${os.status==='aguardando'?`<button class="btn btn-primary btn-sm" onclick="abrirAtribuir('${os.id}')">Atribuir Técnico</button>`:''}
+          ${os.status==='concluido'?`<button class="btn btn-sm" style="border:1px solid var(--border);color:var(--muted)" onclick="verRelatorio('${os.id}')">📋 Relatório</button>`:''}
+        </div>
+      </div>
+    </div>
+  `}).join('');
+}
+
+/* ── VER OS DETALHES ── */
+window.verOS = function(id){
+  const os = getOS(id); if(!os) return;
+  const tec = getUser(os.tecnico);
+  const op = getUser(os.operador);
+  const elapsedMin = os.iniciadoEm ? elapsed(os.iniciadoEm, os.concluidoEm||undefined) : null;
+  const mc = document.getElementById('modal-container');
+  mc.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="mono" style="font-size:11px;color:var(--muted)">${os.id}</span>
+          <span class="chip ${chipClass(os.status)}">${statusLabel(os.status)}</span>
+        </div>
+        <div class="modal-title">${os.tipo}</div>
+
+        <div class="detail-section" style="border:1px solid var(--border);border-radius:8px;padding:12px;margin:-4px 0">
+          <h4>Informações</h4>
+          <div class="kv-grid">
+            <div class="kv"><span>Endereço</span><strong style="font-size:12px">${os.endereco}</strong></div>
+            <div class="kv"><span>Prioridade</span><strong>${os.priority}</strong></div>
+            <div class="kv"><span>Operador</span><strong>${op?op.nome:'—'}</strong></div>
+            <div class="kv"><span>Técnico</span><strong>${tec?tec.nome:'Não atribuído'}</strong></div>
+            <div class="kv"><span>SLA</span><strong>${os.sla} min</strong></div>
+            <div class="kv"><span>Duração</span><strong>${fmtElapsed(elapsedMin||os.duracaoMin)}</strong></div>
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
+          <h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Descrição da Demanda</h4>
+          <p style="font-size:13px">${os.descricao}</p>
+        </div>
+
+        <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
+          <h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Timeline</h4>
+          <div class="timeline">
+            <div class="tl-item"><div class="tl-dot" style="background:var(--accent)"></div><div class="tl-body"><strong>OS Criada</strong><span>${fmtDateTime(os.criadoEm)}</span></div></div>
+            ${os.atribuido?`<div class="tl-item"><div class="tl-dot" style="background:var(--info)"></div><div class="tl-body"><strong>Técnico Atribuído</strong><span>${fmtDateTime(os.atribuido)}</span></div></div>`:''}
+            ${os.iniciadoEm?`<div class="tl-item"><div class="tl-dot" style="background:var(--warn)"></div><div class="tl-body"><strong>Trabalho Iniciado</strong><span>${fmtDateTime(os.iniciadoEm)}</span></div></div>`:''}
+            ${os.concluidoEm?`<div class="tl-item"><div class="tl-dot" style="background:var(--ok)"></div><div class="tl-body"><strong>Concluído</strong><span>${fmtDateTime(os.concluidoEm)}</span></div></div>`:''}
+          </div>
+        </div>
+
+        ${os.evidencias.length>0?`
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
+            <h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Evidências (${os.evidencias.length})</h4>
+            <div class="evidence-grid">${os.evidencias.map(e=>`<div class="evidence-img"><img src="${e}" alt="evidência"></div>`).join('')}</div>
+          </div>
+        `:''}
+        ${os.obs?`<div style="border:1px solid var(--border);border-radius:8px;padding:12px"><h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Observações do Técnico</h4><p style="font-size:13px">${os.obs}</p></div>`:''}
+
+        <div style="display:flex;gap:8px">
+          ${os.status==='aguardando'?`<button class="btn btn-primary btn-full" onclick="closeModal();abrirAtribuir('${os.id}')">Atribuir Técnico</button>`:''}
+          ${os.status==='concluido'?`<button class="btn btn-outline btn-full" onclick="closeModal();verRelatorio('${os.id}')">📋 Ver Relatório</button>`:''}
+          <button class="btn btn-outline" style="flex-shrink:0" onclick="closeModal()">Fechar</button>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+/* ── ATRIBUIR TÉCNICO ── */
+window.abrirAtribuir = function(id){
+  const os = getOS(id); if(!os) return;
+  const tecnicos = USUARIOS.filter(u=>u.perfil==='tecnico');
+  const mc = document.getElementById('modal-container');
+  mc.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Atribuir Técnico</div>
+        <p style="font-size:13px;color:var(--muted)">${os.id} — ${os.tipo}</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${tecnicos.map(t=>`
+            <button class="profile-btn" onclick="atribuirTecnico('${id}','${t.id}')">
+              <div class="profile-avatar" style="background:${t.cor}20;color:${t.cor}">${t.iniciais}</div>
+              <div class="profile-info"><strong>${t.nome}</strong><small>${ordens.filter(o=>o.tecnico===t.id&&o.status==='em-campo').length} OS ativas</small></div>
+            </button>
+          `).join('')}
+        </div>
+        <button class="btn btn-outline btn-full" onclick="closeModal()">Cancelar</button>
+      </div>
+    </div>
+  `;
+};
+
+window.atribuirTecnico = function(osId, tecId){
+  const os = getOS(osId); if(!os) return;
+  os.tecnico = tecId; os.atribuido = Date.now(); os.status='aguardando';
+  saveOS(); closeModal(); toast('✅ Técnico atribuído com sucesso');
+  renderOpContent();
+};
+
+/* ── NOVA OS ── */
+let novaFotos = [];
+function renderOpNova(c){
+  novaFotos = [];
+  c.innerHTML = `
+    <div class="page-header"><h2>Nova Ordem de Serviço</h2><p>Preencha os dados da demanda</p></div>
+    <div class="page-content">
+      <div class="form-stack">
+        <div class="field">
+          <label>Tipo de Serviço</label>
+          <select id="os-tipo" class="input">
+            <option>Reparo de Fibra (Corte/Fusão)</option>
+            <option>Emergência / SLA Crítico</option>
+            <option>Apoio a Outro Técnico</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Prioridade</label>
+          <select id="os-priority" class="input">
+            <option value="normal">Normal</option>
+            <option value="emergencia">Emergência</option>
+            <option value="apoio">Apoio</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Endereço Completo</label>
+          <input id="os-end" class="input" placeholder="Rua, número, bairro, cidade">
+        </div>
+        <div class="field">
+          <label>SLA (minutos)</label>
+          <input id="os-sla" class="input" type="number" placeholder="240" value="240" min="15" max="1440">
+        </div>
+        <div class="field">
+          <label>Descrição da Demanda</label>
+          <textarea id="os-desc" class="input" rows="3" placeholder="Descreva o problema, equipamentos afetados, cliente..."></textarea>
+        </div>
+        <div class="field">
+          <label>Fotos da Demanda</label>
+          <div class="photo-zone" onclick="document.getElementById('foto-input').click()">
+            <input type="file" id="foto-input" accept="image/*" multiple onchange="adicionarFotos(this)">
+            <div class="photo-zone-icon">📷</div>
+            <p>Toque para adicionar fotos</p>
+          </div>
+          <div class="photo-preview-grid" id="foto-preview"></div>
+        </div>
+        <div class="field">
+          <label>Atribuir Técnico (opcional)</label>
+          <select id="os-tec" class="input">
+            <option value="">Não atribuir agora</option>
+            ${USUARIOS.filter(u=>u.perfil==='tecnico').map(t=>`<option value="${t.id}">${t.nome}</option>`).join('')}
+          </select>
+        </div>
+        <button class="btn btn-primary btn-full" style="margin-top:4px" onclick="criarOS()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Criar Ordem de Serviço
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+window.adicionarFotos = function(input){
+  const files = Array.from(input.files);
+  files.forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      novaFotos.push(e.target.result);
+      renderFotoPreview();
+    };
+    reader.readAsDataURL(f);
+  });
+};
+
+function renderFotoPreview(){
+  const grid = document.getElementById('foto-preview'); if(!grid) return;
+  grid.innerHTML = novaFotos.map((src,i)=>`
+    <div class="photo-preview-item">
+      <img src="${src}" alt="foto">
+      <button onclick="removerFoto(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+window.removerFoto = function(i){ novaFotos.splice(i,1); renderFotoPreview(); };
+
+window.criarOS = function(){
+  const tipo = document.getElementById('os-tipo')?.value;
+  const end  = document.getElementById('os-end')?.value?.trim();
+  const desc = document.getElementById('os-desc')?.value?.trim();
+  const sla  = parseInt(document.getElementById('os-sla')?.value)||240;
+  const tec  = document.getElementById('os-tec')?.value||null;
+  const prio = document.getElementById('os-priority')?.value||'normal';
+  if(!end||!desc){ toast('⚠️ Endereço e descrição são obrigatórios'); return; }
+  const nova = {
+    id: uid(), tipo, status:'aguardando', priority:prio,
+    endereco:end, descricao:desc,
+    tecnico:tec||null, operador:currentUser.id,
+    criadoEm:Date.now(), atribuido:tec?Date.now():null,
+    iniciadoEm:null, concluidoEm:null,
+    fotos:[...novaFotos], evidencias:[],
+    obs:'', sla, duracaoMin:null
+  };
+  ordens.unshift(nova); saveOS();
+  novaFotos=[];
+  toast('✅ OS criada: '+nova.id);
+  opTab='lista'; renderOpContent();
+};
+
+/* ── RELATÓRIO ── */
+window.verRelatorio = function(id){
+  const os = getOS(id); if(!os) return;
+  const tec = getUser(os.tecnico);
+  const op = getUser(os.operador);
+  const dur = os.duracaoMin || elapsed(os.iniciadoEm, os.concluidoEm);
+  const slaOk = dur <= os.sla;
+  const mc = document.getElementById('modal-container');
+  mc.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="report-header" style="margin:-4px -16px 0;border-radius:12px 12px 0 0">
+          <div class="report-id">${os.id}</div>
+          <h2>${os.tipo}</h2>
+          <p>${os.endereco}</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="stat-card"><div class="stat-n">${fmtElapsed(dur)}</div><div class="stat-l">Duração Total</div><div class="stat-sub ${slaOk?'ok':'danger'}">${slaOk?'✓ Dentro do SLA':'✗ SLA excedido'}</div></div>
+          <div class="stat-card"><div class="stat-n">${os.sla}min</div><div class="stat-l">SLA Contratado</div><div class="stat-sub muted">Limite acordado</div></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div class="kv"><span>Data do Serviço</span><strong>${fmtDate(os.criadoEm)}</strong></div>
+          <div class="kv"><span>Abertura</span><strong>${fmtTime(os.criadoEm)}</strong></div>
+          <div class="kv"><span>Início Execução</span><strong>${fmtTime(os.iniciadoEm)}</strong></div>
+          <div class="kv"><span>Conclusão</span><strong>${fmtTime(os.concluidoEm)}</strong></div>
+          <div class="kv"><span>Técnico Responsável</span><strong>${tec?tec.nome:'—'}</strong></div>
+          <div class="kv"><span>Operador</span><strong>${op?op.nome:'—'}</strong></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
+          <div class="kv"><span>Descrição da Demanda</span><strong style="font-size:13px;font-weight:400;line-height:1.5;margin-top:4px;display:block">${os.descricao}</strong></div>
+        </div>
+        ${os.obs?`<div style="border:1px solid var(--border);border-radius:8px;padding:12px"><div class="kv"><span>Observações / Solução Aplicada</span><strong style="font-size:13px;font-weight:400;line-height:1.5;margin-top:4px;display:block">${os.obs}</strong></div></div>`:''}
+        ${os.evidencias.length>0?`<div style="border:1px solid var(--border);border-radius:8px;padding:12px"><p style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Evidências (${os.evidencias.length})</p><div class="evidence-grid">${os.evidencias.map(e=>`<div class="evidence-img"><img src="${e}" alt="ev"></div>`).join('')}</div></div>`:''}
+        <button class="btn btn-outline btn-full" onclick="closeModal()">Fechar</button>
+      </div>
+    </div>
+  `;
+};
+
+/* ── DASHBOARD OPERADOR ── */
+function renderOpDash(c){
+  const total=ordens.length, concluidos=ordens.filter(o=>o.status==='concluido'), emCampo=ordens.filter(o=>o.status==='em-campo'), aguardando=ordens.filter(o=>o.status==='aguardando');
+  const slaOk=concluidos.filter(o=>{ const d=o.duracaoMin||elapsed(o.iniciadoEm,o.concluidoEm); return d<=o.sla; }).length;
+  const slaPerc = concluidos.length ? Math.round(slaOk/concluidos.length*100) : 0;
+
+  const hoje=new Date(), hojeStr=`${hoje.getDate()}/${hoje.getMonth()+1}`;
+  const tipoCount={};
+  ordens.forEach(o=>{ tipoCount[o.tipo]=(tipoCount[o.tipo]||0)+1; });
+  const maxTipo=Math.max(...Object.values(tipoCount),1);
+
+  const tecStats = USUARIOS.filter(u=>u.perfil==='tecnico').map(t=>({
+    ...t, ativas:ordens.filter(o=>o.tecnico===t.id&&o.status==='em-campo').length,
+    total:ordens.filter(o=>o.tecnico===t.id).length
+  }));
+
+  c.innerHTML = `
+    <div class="page-header"><h2>Dashboard</h2><p>Visão geral operacional — ${hojeStr}</p></div>
+    <div class="page-content">
+      <div class="dash-section">
+        <h3>Status Geral</h3>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-n accent">${aguardando.length}</div><div class="stat-l">Aguardando</div></div>
+          <div class="stat-card"><div class="stat-n" style="color:var(--info)">${emCampo.length}</div><div class="stat-l">Em Campo</div></div>
+          <div class="stat-card"><div class="stat-n ok">${concluidos.length}</div><div class="stat-l">Concluídos</div></div>
+          <div class="stat-card"><div class="stat-n">${total}</div><div class="stat-l">Total</div></div>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <h3>SLA</h3>
+        <div class="chart-wrap">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px">
+            <span style="font-size:32px;font-weight:700;color:${slaPerc>=80?'var(--ok)':slaPerc>=60?'var(--warn)':'var(--danger)'}">${slaPerc}%</span>
+            <span style="font-size:12px;color:var(--muted);text-align:right">${slaOk} de ${concluidos.length}<br>dentro do SLA</span>
+          </div>
+          <div class="sla-bar">
+            <div class="sla-seg" style="width:${slaPerc}%;background:var(--ok)"></div>
+            <div class="sla-seg" style="flex:1;background:var(--danger);opacity:.4"></div>
+          </div>
+          <div class="legend-row">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--ok)"></div>Dentro do SLA</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--danger);opacity:.6"></div>Excedeu SLA</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <h3>Por Tipo de Serviço</h3>
+        <div class="chart-wrap">
+          ${Object.entries(tipoCount).map(([tipo,n])=>`
+            <div class="bar-row">
+              <div class="bar-label">${tipo.split(' ')[0]}<br><span style="font-size:9px">${tipo.split(/[\s\/]/)[1]||''}</span></div>
+              <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxTipo*100)}%;background:var(--accent)"></div></div>
+              <div class="bar-val">${n}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <h3>Técnicos</h3>
+        <div class="card">
+          ${tecStats.map((t,i)=>`
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;${i>0?'border-top:1px solid var(--border)':''}">
+              <div class="profile-avatar" style="background:${t.cor}20;color:${t.cor};width:36px;height:36px;flex-shrink:0">${t.iniciais}</div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600">${t.nome}</div>
+                <div style="font-size:11px;color:var(--muted)">${t.total} OS total</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:16px;font-weight:700;color:${t.ativas>0?'var(--info)':'var(--muted)'}">${t.ativas}</div>
+                <div style="font-size:10px;color:var(--muted)">em campo</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <h3>Tempo Médio por Tipo</h3>
+        <div class="chart-wrap">
+          ${['Reparo de Fibra (Corte/Fusão)','Emergência / SLA Crítico','Apoio a Outro Técnico'].map(tipo=>{
+            const concTipo=concluidos.filter(o=>o.tipo===tipo);
+            const media=concTipo.length?Math.round(concTipo.reduce((a,o)=>a+(o.duracaoMin||elapsed(o.iniciadoEm,o.concluidoEm)),0)/concTipo.length):0;
+            const maxSla=concTipo.length?concTipo[0].sla:240;
+            return `
+              <div class="bar-row">
+                <div class="bar-label">${tipo.split(' ')[0]}</div>
+                <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,Math.round(media/maxSla*100))}%;background:${media>maxSla?'var(--danger)':'var(--ok)'}"></div></div>
+                <div class="bar-val">${media?fmtElapsed(media):'—'}</div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GESTÃO DE USUÁRIOS
+═══════════════════════════════════════════════════════════ */
+const COR_PALETTE = ['#F59E0B','#F97316','#EF4444','#EC4899','#A855F7','#7C3AED','#3B82F6','#0891B2','#14B8A6','#22C55E','#84CC16','#64748B'];
+const PERFIL_LABELS = {admin:'Administrador', operador:'Operador', tecnico:'Técnico de Campo'};
+
+function renderAdminUsuarios(c){
+  const grupos = [
+    {label:'Administradores', perfil:'admin'},
+    {label:'Operadores', perfil:'operador'},
+    {label:'Técnicos de Campo', perfil:'tecnico'},
+  ];
+  c.innerHTML = `
+    <div class="page-header">
+      <h2>Usuários</h2>
+      <p>${USUARIOS.length} usuário${USUARIOS.length!==1?'s':''} cadastrados</p>
+    </div>
+    <div class="page-content">
+      <button class="btn btn-primary btn-full" style="margin-bottom:16px" onclick="abrirFormUsuario(null)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo Usuário
+      </button>
+      ${grupos.map(g=>{
+        const lista = USUARIOS.filter(u=>u.perfil===g.perfil);
+        if(!lista.length) return '';
+        return `
+          <div style="margin-bottom:16px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px">${g.label}</div>
+            <div class="card">
+              ${lista.map((u,i)=>`
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;${i>0?'border-top:1px solid var(--border)':''}">
+                  <div style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;background:${u.cor}20;color:${u.cor};border:1px solid ${u.cor}40">${u.iniciais}</div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.nome}</div>
+                    <div style="font-size:11px;color:var(--muted)">${PERFIL_LABELS[u.perfil]||u.perfil}</div>
+                  </div>
+                  <div style="display:flex;gap:6px">
+                    <button class="btn btn-outline btn-sm" onclick="abrirFormUsuario('${u.id}')">Editar</button>
+                    ${u.id!==currentUser.id?`<button class="btn btn-sm" style="border:1px solid var(--danger-lo);color:var(--danger)" onclick="confirmarExcluir('${u.id}')">Excluir</button>`:''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>
+    <div id="modal-container"></div>
+  `;
+}
+
+window.abrirFormUsuario = function(uid){
+  const u = uid ? USUARIOS.find(x=>x.id===uid) : null;
+  const cor = u?.cor || COR_PALETTE[Math.floor(Math.random()*COR_PALETTE.length)];
+  const mc = document.getElementById('modal-container');
+  mc.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">${u?'Editar Usuário':'Novo Usuário'}</div>
+        <div style="display:flex;justify-content:center;margin:4px 0">
+          <div id="prev-avatar" style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;background:${cor}20;color:${cor};border:2px solid ${cor}60">${u?.iniciais||'?'}</div>
+        </div>
+        <div class="form-stack">
+          <div class="field">
+            <label>Nome Completo</label>
+            <input id="u-nome" class="input" placeholder="Nome completo" value="${u?.nome||''}" oninput="atualizarPreview()">
+          </div>
+          <div class="field">
+            <label>Iniciais (2 letras)</label>
+            <input id="u-ini" class="input" placeholder="Ex: MM" maxlength="3" value="${u?.iniciais||''}" oninput="atualizarPreview()">
+          </div>
+          <div class="field">
+            <label>Perfil</label>
+            <select id="u-perfil" class="input">
+              <option value="tecnico"${(!u||u.perfil==='tecnico')?' selected':''}>Técnico de Campo</option>
+              <option value="operador"${u?.perfil==='operador'?' selected':''}>Operador</option>
+              <option value="admin"${u?.perfil==='admin'?' selected':''}>Administrador</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Cor do Avatar</label>
+            <input type="hidden" id="u-cor" value="${cor}">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:2px">
+              ${COR_PALETTE.map(c=>`<button type="button" onclick="selecionarCor('${c}')" style="width:32px;height:32px;border-radius:50%;background:${c};border:3px solid ${c===cor?'#fff':'transparent'};outline:${c===cor?'2px solid '+c:'none'};outline-offset:2px;cursor:pointer;transition:.15s" id="cor-btn-${c.slice(1)}"></button>`).join('')}
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="salvarUsuario('${uid||''}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            ${u?'Salvar Alterações':'Criar Usuário'}
+          </button>
+          <button class="btn btn-outline btn-full" onclick="closeModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+function atualizarPreview(){
+  const nome = document.getElementById('u-nome')?.value||'';
+  const ini  = document.getElementById('u-ini')?.value||'';
+  const cor  = document.getElementById('u-cor')?.value||'#94A3B8';
+  const av   = document.getElementById('prev-avatar'); if(!av) return;
+  const partes = nome.trim().split(/\s+/);
+  let auto = ini || (partes.length>=2 ? partes[0][0]+partes[partes.length-1][0] : partes[0]?.slice(0,2)||'?');
+  av.textContent = auto.toUpperCase().slice(0,2)||'?';
+  av.style.background = cor+'20'; av.style.color = cor; av.style.borderColor = cor+'60';
+}
+
+window.selecionarCor = function(cor){
+  document.getElementById('u-cor').value = cor;
+  COR_PALETTE.forEach(c=>{
+    const btn=document.getElementById('cor-btn-'+c.slice(1));
+    if(btn){ btn.style.border=`3px solid ${c===cor?'#fff':'transparent'}`; btn.style.outline=c===cor?`2px solid ${c}`:'none'; }
+  });
+  atualizarPreview();
+};
+
+window.salvarUsuario = function(uid){
+  const nome  = document.getElementById('u-nome')?.value?.trim();
+  const ini   = document.getElementById('u-ini')?.value?.trim().toUpperCase().slice(0,2);
+  const perfil= document.getElementById('u-perfil')?.value;
+  const cor   = document.getElementById('u-cor')?.value||'#94A3B8';
+  if(!nome){ toast('⚠️ Informe o nome'); return; }
+  const partes = nome.split(/\s+/);
+  const iniciais = ini || (partes.length>=2?partes[0][0]+partes[partes.length-1][0]:partes[0].slice(0,2)).toUpperCase();
+  if(uid){
+    const u = USUARIOS.find(x=>x.id===uid); if(!u) return;
+    u.nome=nome; u.iniciais=iniciais; u.perfil=perfil; u.cor=cor;
+    if(currentUser.id===uid){ currentUser.nome=nome; currentUser.iniciais=iniciais; currentUser.cor=cor; }
+  } else {
+    USUARIOS.push({id:'usr'+Date.now(), nome, perfil, iniciais, cor});
+  }
+  saveUsers(); closeModal(); toast(uid?'✅ Usuário atualizado':'✅ Usuário criado');
+  renderAdminUsuarios(document.getElementById('op-content'));
+};
+
+window.confirmarExcluir = function(uid){
+  const u = USUARIOS.find(x=>x.id===uid); if(!u) return;
+  const osCount = ordens.filter(o=>o.tecnico===uid||o.operador===uid).length;
+  const mc = document.getElementById('modal-container');
+  mc.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title" style="color:var(--danger)">Excluir Usuário</div>
+        <p style="font-size:13px">Tem certeza que deseja excluir <strong>${u.nome}</strong>?</p>
+        ${osCount>0?`<div style="background:var(--warn-lo);border:1px solid var(--warn);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--warn)">⚠️ Este usuário possui ${osCount} ordem${osCount!==1?'s':''} de serviço vinculada${osCount!==1?'s':''}.</div>`:''}
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-danger btn-full" onclick="excluirUsuario('${uid}')">Excluir</button>
+          <button class="btn btn-outline btn-full" onclick="closeModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+window.excluirUsuario = function(uid){
+  const i = USUARIOS.findIndex(x=>x.id===uid); if(i<0) return;
+  USUARIOS.splice(i,1); saveUsers(); closeModal();
+  toast('🗑️ Usuário removido');
+  renderAdminUsuarios(document.getElementById('op-content'));
+};
+
+/* ═══════════════════════════════════════════════════════════
+   PAINEL ADMIN
+═══════════════════════════════════════════════════════════ */
+function renderAdminPanel(c){
+  const total=ordens.length;
+  const concluidos=ordens.filter(o=>o.status==='concluido');
+  const emCampo=ordens.filter(o=>o.status==='em-campo');
+  const aguardando=ordens.filter(o=>o.status==='aguardando');
+  const slaOkCount=concluidos.filter(o=>{ const d=o.duracaoMin||elapsed(o.iniciadoEm,o.concluidoEm); return d<=o.sla; }).length;
+  const slaPerc=concluidos.length?Math.round(slaOkCount/concluidos.length*100):0;
+
+  const tecStats=USUARIOS.filter(u=>u.perfil==='tecnico').map(t=>({
+    ...t,
+    ativas:ordens.filter(o=>o.tecnico===t.id&&o.status==='em-campo').length,
+    concluidas:ordens.filter(o=>o.tecnico===t.id&&o.status==='concluido').length,
+    total:ordens.filter(o=>o.tecnico===t.id).length,
+    mediaMin:(()=>{
+      const c=ordens.filter(o=>o.tecnico===t.id&&o.status==='concluido');
+      if(!c.length) return 0;
+      return Math.round(c.reduce((a,o)=>a+(o.duracaoMin||elapsed(o.iniciadoEm,o.concluidoEm)),0)/c.length);
+    })()
+  }));
+
+  const opStats=USUARIOS.filter(u=>u.perfil==='operador'||u.perfil==='admin').map(op=>({
+    ...op, total:ordens.filter(o=>o.operador===op.id).length
+  }));
+
+  c.innerHTML=`
+    <div class="page-header">
+      <h2>Painel Administrador</h2>
+      <p>Visão completa do sistema — Marcus Maia</p>
+    </div>
+    <div class="page-content">
+
+      <div style="background:linear-gradient(135deg,#F59E0B22,#F59E0B08);border:1px solid #F59E0B40;border-radius:12px;padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:#F59E0B">Acesso Administrativo</div>
+          <div style="font-size:11px;color:var(--muted)">Você tem acesso total a todos os dados e configurações</div>
+        </div>
+        <button onclick="exportarExcel()" class="btn btn-sm" style="background:var(--ok);color:#fff;flex-shrink:0">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar Excel
+        </button>
+      </div>
+
+      <div class="dash-section">
+        <h3>Resumo Geral</h3>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-n">${total}</div><div class="stat-l">Total de OS</div></div>
+          <div class="stat-card"><div class="stat-n" style="color:var(--warn)">${aguardando.length}</div><div class="stat-l">Aguardando</div></div>
+          <div class="stat-card"><div class="stat-n" style="color:var(--info)">${emCampo.length}</div><div class="stat-l">Em Campo</div></div>
+          <div class="stat-card"><div class="stat-n ok">${concluidos.length}</div><div class="stat-l">Concluídos</div></div>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <h3>Performance SLA Global</h3>
+        <div class="chart-wrap">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="font-size:32px;font-weight:700;color:${slaPerc>=80?'var(--ok)':slaPerc>=60?'var(--warn)':'var(--danger)'}">${slaPerc}%</span>
+            <span style="font-size:12px;color:var(--muted);text-align:right">${slaOkCount}/${concluidos.length} dentro do SLA</span>
+          </div>
+          <div class="sla-bar">
+            <div class="sla-seg" style="width:${slaPerc}%;background:var(--ok)"></div>
+            <div class="sla-seg" style="flex:1;background:var(--danger);opacity:.35"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <h3>Desempenho por Técnico</h3>
+        <div class="card">
+          ${tecStats.map((t,i)=>`
+            <div style="display:flex;align-items:center;gap:12px;padding:14px;${i>0?'border-top:1px solid var(--border)':''}">
+              <div class="profile-avatar" style="background:${t.cor}20;color:${t.cor};width:38px;height:38px;flex-shrink:0">${t.iniciais}</div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600">${t.nome}</div>
+                <div style="font-size:11px;color:var(--muted)">${t.total} OS • Média: ${t.mediaMin?fmtElapsed(t.mediaMin):'—'}</div>
+              </div>
+              <div style="display:flex;gap:10px;text-align:center">
+                <div><div style="font-size:14px;font-weight:700;color:${t.ativas>0?'var(--info)':'var(--muted)'}">${t.ativas}</div><div style="font-size:9px;color:var(--muted)">campo</div></div>
+                <div><div style="font-size:14px;font-weight:700;color:var(--ok)">${t.concluidas}</div><div style="font-size:9px;color:var(--muted)">feito</div></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <h3>Ordens por Operador</h3>
+        <div class="card">
+          ${opStats.map((op,i)=>`
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;${i>0?'border-top:1px solid var(--border)':''}">
+              <div class="profile-avatar" style="background:${op.cor}20;color:${op.cor};width:34px;height:34px;flex-shrink:0;font-size:12px">${op.iniciais}</div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600">${op.nome}</div>
+                <div style="font-size:11px;color:var(--muted);text-transform:capitalize">${op.perfil}</div>
+              </div>
+              <div style="font-size:18px;font-weight:700">${op.total}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <h3>Exportar Dados</h3>
+        <div class="card-body card" style="display:flex;flex-direction:column;gap:10px">
+          <p style="font-size:12px;color:var(--muted)">Exporta todas as ${total} ordens com ID, tipo, status, técnico, operador, datas, duração e SLA em formato CSV compatível com Microsoft Excel e Google Sheets.</p>
+          <button onclick="exportarExcel()" class="btn btn-ok btn-full">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Baixar Excel — ${total} registros
+          </button>
+        </div>
+      </div>
+
+    </div>
+  `;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TÉCNICO
+═══════════════════════════════════════════════════════════ */
+let tecTab = 'minhas';
+function renderTecnico(){
+  const s = document.getElementById('screen-tecnico');
+  const minhasAtivas = ordens.filter(o=>o.tecnico===currentUser.id&&o.status==='em-campo').length;
+  s.innerHTML = `
+    <div class="topbar">
+      <div class="topbar-left">
+        <svg width="24" height="24" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#F97316"/><path d="M8 20h5M27 20h5M13 20c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7-7-3.13-7-7z" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="20" cy="20" r="3" fill="#fff"/></svg>
+        <span class="topbar-logo">Field<span>Ops</span></span>
+      </div>
+      <div class="topbar-right">
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--surface2);border-radius:8px;cursor:pointer" onclick="logout()">
+          <div class="avatar-sm" style="background:${currentUser.cor}20;color:${currentUser.cor}">${currentUser.iniciais}</div>
+          <span style="font-size:12px;font-weight:500">${currentUser.nome.split(' ')[0]}</span>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="bnav-item ${tecTab==='minhas'?'active':''}" onclick="tecTab='minhas';renderTecContent()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Minhas OS
+        ${minhasAtivas>0?`<span class="bnav-dot"></span>`:''}
+      </button>
+      <button class="bnav-item ${tecTab==='historico'?'active':''}" onclick="tecTab='historico';renderTecContent()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+        Histórico
+      </button>
+    </div>
+    <div id="tec-content" style="flex:1;overflow-y:auto;display:flex;flex-direction:column"></div>
+    <div id="tec-modal"></div>
+  `;
+  renderTecContent();
+}
+
+function renderTecContent(){
+  document.querySelectorAll('.bnav-item').forEach(b=>{
+    b.className='bnav-item'+(b.getAttribute('onclick').includes(`'${tecTab}'`)?'  active':'');
+  });
+  // fix active state properly
+  const items = document.querySelectorAll('.bnav-item');
+  items.forEach(b=>{
+    const oc=b.getAttribute('onclick')||'';
+    b.classList.toggle('active', oc.includes(`'${tecTab}'`));
+  });
+  const c = document.getElementById('tec-content');
+  if(tecTab==='minhas') renderTecMinhas(c);
+  else renderTecHistorico(c);
+}
+
+function renderTecMinhas(c){
+  const aguardando = ordens.filter(o=>o.tecnico===currentUser.id&&o.status==='aguardando');
+  const emCampo   = ordens.filter(o=>o.tecnico===currentUser.id&&o.status==='em-campo');
+
+  c.innerHTML = `
+    <div class="page-header">
+      <h2>Minhas Ordens</h2>
+      <p>${emCampo.length} em campo • ${aguardando.length} aguardando</p>
+    </div>
+    <div class="page-content">
+      ${emCampo.length>0?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:8px">▶ Em Execução</div>`:''}
+      ${emCampo.map(os=>renderOSCardTec(os,true)).join('')}
+      ${aguardando.length>0?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:${emCampo.length>0?'16px':0} 0 8px">AGUARDANDO</div>`:''}
+      ${aguardando.map(os=>renderOSCardTec(os,false)).join('')}
+      ${emCampo.length===0&&aguardando.length===0?`<div style="text-align:center;padding:60px 20px"><div style="font-size:32px;margin-bottom:10px">✅</div><p style="color:var(--muted);font-size:14px">Sem ordens atribuídas</p></div>`:''}
+    </div>
+  `;
+
+  // Start timers for em-campo
+  emCampo.forEach(os=>{
+    if(timers[os.id]) return;
+    timers[os.id] = setInterval(()=>{
+      const el = document.getElementById('timer-'+os.id);
+      if(el) el.textContent = fmtElapsed(elapsed(os.iniciadoEm));
+    }, 10000);
+  });
+}
+
+function renderOSCardTec(os, ativo){
+  const hasImg = os.fotos && os.fotos.length > 0;
+  return `
+    <div class="my-os-card" data-priority="${os.priority}">
+      <div class="os-id">${os.id}</div>
+      <div class="os-type-row">
+        <strong>${os.tipo}</strong>
+        <span class="chip ${chipClass(os.status)}">${statusLabel(os.status)}</span>
+      </div>
+      <div class="os-address">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${os.endereco}
+      </div>
+      <div class="os-desc">${os.descricao}</div>
+      ${hasImg?`<div class="demand-img"><img src="${os.fotos[0]}" alt="demanda"></div>`:''}
+      ${ativo?`
+        <div class="timer-display" style="margin-bottom:10px">
+          <div><div class="timer-label">Tempo em campo</div><div class="timer-val" id="timer-${os.id}">${fmtElapsed(elapsed(os.iniciadoEm))}</div></div>
+          <div style="text-align:right"><div class="timer-label">SLA</div><div style="font-size:13px;font-weight:600;color:var(--muted)">${os.sla}min</div></div>
+        </div>
+        <button class="btn btn-ok btn-full" onclick="abrirBaixa('${os.id}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Registrar Conclusão
+        </button>
+      `:`
+        <button class="btn btn-primary btn-full" onclick="iniciarOS('${os.id}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Iniciar Atendimento
+        </button>
+      `}
+    </div>
+  `;
+}
+
+window.iniciarOS = function(id){
+  const os = getOS(id); if(!os) return;
+  os.status = 'em-campo'; os.iniciadoEm = Date.now();
+  saveOS(); toast('▶ Atendimento iniciado'); renderTecContent();
+};
+
+/* ── BAIXA / CONCLUSÃO ── */
+let baixaEvidencias = [];
+window.abrirBaixa = function(id){
+  baixaEvidencias = [];
+  const os = getOS(id); if(!os) return;
+  const dur = elapsed(os.iniciadoEm);
+  const mc = document.getElementById('tec-modal');
+  mc.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeTecModal()">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Registrar Conclusão</div>
+        <p style="font-size:12px;color:var(--muted)">${os.id} • Tempo em campo: <strong style="color:var(--accent)">${fmtElapsed(dur)}</strong></p>
+
+        <div class="form-stack">
+          <div class="field">
+            <label>Evidências Fotográficas *</label>
+            <div class="photo-zone" onclick="document.getElementById('ev-input').click()">
+              <input type="file" id="ev-input" accept="image/*" multiple onchange="adicionarEvidencias(this)">
+              <div class="photo-zone-icon">📸</div>
+              <p>Adicione fotos do serviço concluído</p>
+            </div>
+            <div class="photo-preview-grid" id="ev-preview"></div>
+          </div>
+          <div class="field">
+            <label>Solução Aplicada / Observações *</label>
+            <textarea id="baixa-obs" class="input" rows="4" placeholder="Descreva o serviço realizado, materiais usados, teste de sinal, etc..."></textarea>
+          </div>
+          <button class="btn btn-ok btn-full" onclick="concluirOS('${id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Finalizar OS
+          </button>
+          <button class="btn btn-outline btn-full" onclick="closeTecModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+window.adicionarEvidencias = function(input){
+  const files = Array.from(input.files);
+  files.forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      baixaEvidencias.push(e.target.result);
+      renderEvPreview();
+    };
+    reader.readAsDataURL(f);
+  });
+};
+
+function renderEvPreview(){
+  const grid=document.getElementById('ev-preview'); if(!grid) return;
+  grid.innerHTML = baixaEvidencias.map((src,i)=>`
+    <div class="photo-preview-item">
+      <img src="${src}" alt="ev">
+      <button onclick="removerEv(${i})">✕</button>
+    </div>
+  `).join('');
+}
+window.removerEv = function(i){ baixaEvidencias.splice(i,1); renderEvPreview(); };
+
+window.concluirOS = function(id){
+  const os = getOS(id); if(!os) return;
+  const obs = document.getElementById('baixa-obs')?.value?.trim();
+  if(baixaEvidencias.length===0){ toast('⚠️ Adicione ao menos uma foto de evidência'); return; }
+  if(!obs){ toast('⚠️ Descreva a solução aplicada'); return; }
+  os.status='concluido'; os.concluidoEm=Date.now();
+  os.evidencias=[...baixaEvidencias]; os.obs=obs;
+  os.duracaoMin = elapsed(os.iniciadoEm, os.concluidoEm);
+  if(timers[id]){ clearInterval(timers[id]); delete timers[id]; }
+  saveOS(); closeTecModal();
+  toast('✅ OS concluída com sucesso!', 3000);
+  renderTecContent();
+};
+
+function renderTecHistorico(c){
+  const concluidas = ordens.filter(o=>o.tecnico===currentUser.id&&o.status==='concluido');
+  const totalMin = concluidas.reduce((a,o)=>a+(o.duracaoMin||0),0);
+  const slaOk = concluidas.filter(o=>(o.duracaoMin||0)<=o.sla).length;
+
+  c.innerHTML = `
+    <div class="page-header"><h2>Meu Histórico</h2><p>${concluidas.length} serviços concluídos</p></div>
+    <div class="page-content">
+      <div class="stats-row" style="margin-bottom:16px">
+        <div class="stat-card"><div class="stat-n ok">${concluidas.length}</div><div class="stat-l">Concluídos</div></div>
+        <div class="stat-card"><div class="stat-n">${fmtElapsed(concluidas.length?Math.round(totalMin/concluidas.length):0)}</div><div class="stat-l">Média</div></div>
+        <div class="stat-card" style="grid-column:span 2"><div class="stat-n" style="color:${slaOk===concluidas.length?'var(--ok)':'var(--warn)'}">${concluidas.length?Math.round(slaOk/concluidas.length*100):0}%</div><div class="stat-l">SLA Cumprido</div></div>
+      </div>
+      ${concluidas.length===0?`<p style="text-align:center;color:var(--muted);padding:40px 0">Nenhum serviço concluído</p>`:''}
+      ${concluidas.map(os=>{
+        const dur=os.duracaoMin||elapsed(os.iniciadoEm,os.concluidoEm);
+        const ok=dur<=os.sla;
+        return `
+          <div class="my-os-card" data-priority="${os.priority}" style="padding-bottom:10px">
+            <div class="os-id">${os.id}</div>
+            <div class="os-type-row"><strong>${os.tipo}</strong><span class="chip chip-concluido">Concluído</span></div>
+            <div class="os-address"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${os.endereco}</div>
+            <div style="display:flex;gap:10px;margin-top:8px">
+              <div><div style="font-size:10px;color:var(--muted)">Duração</div><div style="font-size:15px;font-weight:700;color:${ok?'var(--ok)':'var(--danger)'}">${fmtElapsed(dur)}</div></div>
+              <div><div style="font-size:10px;color:var(--muted)">SLA</div><div style="font-size:15px;font-weight:700;color:var(--muted)">${os.sla}min</div></div>
+              <div><div style="font-size:10px;color:var(--muted)">Concluído</div><div style="font-size:13px;font-weight:500">${fmtDateTime(os.concluidoEm)}</div></div>
+            </div>
+            ${os.evidencias.length>0?`<div style="display:flex;gap:6px;margin-top:8px;overflow-x:auto">${os.evidencias.map(e=>`<div style="width:56px;height:56px;flex-shrink:0;border-radius:6px;overflow:hidden;background:var(--surface2)"><img src="${e}" style="width:100%;height:100%;object-fit:cover"></div>`).join('')}</div>`:''}
+          </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+/* ─── MODAL HELPERS ── */
+window.closeModal = function(){ const mc=document.getElementById('modal-container'); if(mc) mc.innerHTML=''; };
+window.closeTecModal = function(){ const mc=document.getElementById('tec-modal'); if(mc) mc.innerHTML=''; };
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORTAR EXCEL (CSV com BOM UTF-8 — abre no Excel)
+═══════════════════════════════════════════════════════════ */
+function buildCSV(){
+  const cols = [
+    'ID','Tipo','Status','Prioridade','Endereço','Descrição',
+    'Operador','Técnico','SLA (min)','Duração (min)',
+    'Criado em','Atribuído em','Iniciado em','Concluído em',
+    'SLA Cumprido','Observações'
+  ];
+  const cell = v => {
+    if(v == null || v === '') return '';
+    const s = String(v);
+    if(s.includes(',') || s.includes('"') || s.includes('\n')) return '"'+s.replace(/"/g,'""')+'"';
+    return s;
+  };
+  const rows = ordens.map(os=>{
+    const tec = getUser(os.tecnico);
+    const op  = getUser(os.operador);
+    const dur = os.duracaoMin != null ? os.duracaoMin : (os.iniciadoEm ? elapsed(os.iniciadoEm, os.concluidoEm||undefined) : '');
+    const slaOk = dur !== '' ? (dur <= os.sla ? 'Sim' : 'Não') : '';
+    return [
+      os.id, os.tipo, statusLabel(os.status), os.priority,
+      os.endereco, os.descricao,
+      op ? op.nome : '', tec ? tec.nome : '',
+      os.sla, dur,
+      os.criadoEm   ? new Date(os.criadoEm  ).toLocaleString('pt-BR') : '',
+      os.atribuido  ? new Date(os.atribuido  ).toLocaleString('pt-BR') : '',
+      os.iniciadoEm ? new Date(os.iniciadoEm ).toLocaleString('pt-BR') : '',
+      os.concluidoEm? new Date(os.concluidoEm).toLocaleString('pt-BR') : '',
+      slaOk, os.obs || ''
+    ].map(cell).join(',');
+  });
+  return '﻿' + cols.join(',') + '\n' + rows.join('\n');
+}
+
+window.exportarExcel = async function(){
+  toast('⏳ Preparando exportação…');
+  const downloads = await window.claude?.use('downloads');
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const filename = `fieldops_atividades_${stamp}.csv`;
+  const csv = buildCSV();
+  if(downloads){
+    try{
+      await downloads.save({ filename, data: csv });
+      toast('✅ Exportado: '+filename);
+    } catch(e){
+      if(e?.code !== 'cancelled') toast('⚠️ Erro ao exportar: '+(e?.message||e));
+    }
+  } else {
+    // fallback: data URI (funciona em maioria dos navegadores fora do artifact viewer)
+    const uri = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+    const a = Object.assign(document.createElement('a'),{href:uri,download:filename});
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('✅ Exportado: '+filename);
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════ */
+renderLogin();
+</script>
+
+</body></html>
