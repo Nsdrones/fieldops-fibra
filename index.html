@@ -475,7 +475,7 @@ function avatar(user, size='sm'){
 /* ═══════════════════════════════════════════════════════════
    LOGIN
 ═══════════════════════════════════════════════════════════ */
-function renderLogin(step, uid){
+function renderLogin(step, param){
   const s = document.getElementById('screen-login');
   const logo = `
     <div class="login-logo">
@@ -487,68 +487,109 @@ function renderLogin(step, uid){
       <h1>Field<span>Ops</span> Fibra</h1>
     </div>`;
 
-  if(step==='senha' && uid){
-    const u = USUARIOS.find(x=>x.id===uid);
+  /* ── ETAPA 3: senha ── */
+  if(step==='senha' && param){
+    const u = USUARIOS.find(x=>x.id===param);
     if(!u){ renderLogin(); return; }
-    const perfLabel = {admin:'Administrador • Acesso Total', operador:'Painel de Despacho', tecnico:'App de Campo'}[u.perfil]||u.perfil;
+    const perfLabel = {admin:'Administrador', operador:'Operador', tecnico:'Técnico de Campo'}[u.perfil]||u.perfil;
     s.innerHTML = `
       ${logo}
       <div class="login-card">
-        <div style="display:flex;align-items:center;gap:14px;padding:4px 0 8px">
-          <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor};width:48px;height:48px;font-size:18px">${u.iniciais}</div>
+        <div style="display:flex;align-items:center;gap:14px;padding:4px 0 8px;border-bottom:1px solid var(--border);margin-bottom:4px">
+          <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor};width:48px;height:48px;font-size:18px;flex-shrink:0">${u.iniciais}</div>
           <div><div style="font-size:15px;font-weight:700">${u.nome}</div><div style="font-size:12px;color:var(--muted)">${perfLabel}</div></div>
         </div>
         <div class="field">
           <label>Senha</label>
           <div style="position:relative">
-            <input id="login-senha" class="input" type="password" placeholder="Digite sua senha" autocomplete="current-password" style="padding-right:42px" onkeydown="if(event.key==='Enter')confirmarLogin('${uid}')">
+            <input id="login-senha" class="input" type="password" placeholder="Digite sua senha" autocomplete="current-password" style="padding-right:42px" onkeydown="if(event.key==='Enter')confirmarLogin('${param}')">
             <button type="button" onclick="toggleSenhaVis()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);padding:4px" id="vis-btn">
               <svg id="vis-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
           <div id="login-erro" style="display:none;color:var(--danger);font-size:12px;margin-top:4px">❌ Senha incorreta. Tente novamente.</div>
         </div>
-        <button class="btn btn-primary btn-full" onclick="confirmarLogin('${uid}')">Entrar</button>
-        <button class="btn btn-outline btn-full" onclick="renderLogin()">← Trocar usuário</button>
+        <button class="btn btn-primary btn-full" onclick="confirmarLogin('${param}')">Entrar</button>
+        <button class="btn btn-outline btn-full" onclick="renderLogin('usuarios','${u.perfil}')">← Trocar usuário</button>
       </div>
-      <p style="font-size:11px;color:var(--muted)">Dados salvos no navegador</p>
+      <p style="font-size:11px;color:var(--muted)">FieldOps Fibra • v2.0</p>
     `;
     setTimeout(()=>document.getElementById('login-senha')?.focus(), 80);
     return;
   }
 
+  /* ── ETAPA 2: lista de usuários do perfil ── */
+  if(step==='usuarios' && param){
+    const perfil = param;
+    const lista = USUARIOS.filter(u=>u.perfil===perfil);
+    const perfLabel = {admin:'Administrador', operador:'Operador', tecnico:'Técnico de Campo'}[perfil]||perfil;
+    const perfIcon = {
+      admin:`<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>`,
+      operador:`<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>`,
+      tecnico:`<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>`
+    }[perfil]||'';
+    s.innerHTML = `
+      ${logo}
+      <div class="login-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <div style="width:34px;height:34px;border-radius:8px;background:var(--accent-lo);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">${perfIcon}</svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700">${perfLabel}</div>
+            <div style="font-size:11px;color:var(--muted)">${lista.length} usuário${lista.length!==1?'s':''} cadastrado${lista.length!==1?'s':''}</div>
+          </div>
+        </div>
+        <div style="border-bottom:1px solid var(--border);margin:0 -4px 4px"></div>
+        <div class="login-profiles" style="max-height:55vh;overflow-y:auto">
+          ${lista.length===0
+            ? `<div style="text-align:center;color:var(--muted);padding:24px 0;font-size:13px">Nenhum usuário neste perfil</div>`
+            : lista.map(u=>`
+              <button class="profile-btn" onclick="renderLogin('senha','${u.id}')">
+                <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor}">${u.iniciais}</div>
+                <div class="profile-info"><strong>${u.nome}</strong></div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            `).join('')}
+        </div>
+        <button class="btn btn-outline btn-full" style="margin-top:4px" onclick="renderLogin()">← Voltar</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted)">FieldOps Fibra • v2.0</p>
+    `;
+    return;
+  }
+
+  /* ── ETAPA 1: escolha de perfil ── */
+  const grupos = [
+    { perfil:'admin',    label:'Administrador',    sub:'Acesso total ao sistema',   icon:`<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>`,                                                                                 cor:'var(--danger)' },
+    { perfil:'operador', label:'Operador',          sub:'Painel de despacho de OS', icon:`<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>`,          cor:'var(--info)' },
+    { perfil:'tecnico',  label:'Técnico de Campo',  sub:'App de atendimento',       icon:`<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>`, cor:'var(--ok)' },
+  ];
   s.innerHTML = `
     ${logo}
     <div class="login-card">
-      <h2>Escolha seu perfil</h2>
-      <div class="login-profiles">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600">Administrador</div>
-        ${USUARIOS.filter(u=>u.perfil==='admin').map(u=>`
-          <button class="profile-btn" onclick="renderLogin('senha','${u.id}')" style="border-color:${u.cor}40;background:${u.cor}0d">
-            <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor}">${u.iniciais}</div>
-            <div class="profile-info"><strong>${u.nome}</strong><small>Administrador • Acesso Total</small></div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${u.cor}" stroke-width="2" style="flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </button>
-        `).join('')}
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:4px">Operadores</div>
-        ${USUARIOS.filter(u=>u.perfil==='operador').map(u=>`
-          <button class="profile-btn" onclick="renderLogin('senha','${u.id}')">
-            <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor}">${u.iniciais}</div>
-            <div class="profile-info"><strong>${u.nome}</strong><small>Painel de Despacho</small></div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        `).join('')}
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:4px">Técnicos de Campo</div>
-        ${USUARIOS.filter(u=>u.perfil==='tecnico').map(u=>`
-          <button class="profile-btn" onclick="renderLogin('senha','${u.id}')">
-            <div class="profile-avatar" style="background:${u.cor}20;color:${u.cor}">${u.iniciais}</div>
-            <div class="profile-info"><strong>${u.nome}</strong><small>App de Campo</small></div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        `).join('')}
+      <h2 style="text-align:center;font-size:15px;color:var(--muted);font-weight:500">Selecione seu perfil de acesso</h2>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${grupos.map(g=>{
+          const count = USUARIOS.filter(u=>u.perfil===g.perfil).length;
+          return `
+          <button onclick="renderLogin('usuarios','${g.perfil}')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;width:100%;text-align:left;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='${g.cor}'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="width:44px;height:44px;border-radius:10px;background:color-mix(in srgb,${g.cor} 12%,transparent);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${g.cor}" stroke-width="2">${g.icon}</svg>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:15px;font-weight:700;color:var(--text)">${g.label}</div>
+              <div style="font-size:12px;color:var(--muted)">${g.sub}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0">
+              <span style="font-size:18px;font-weight:700;color:${g.cor}">${count}</span>
+              <span style="font-size:10px;color:var(--muted)">usuário${count!==1?'s':''}</span>
+            </div>
+          </button>`;
+        }).join('')}
       </div>
     </div>
-    <p style="font-size:11px;color:var(--muted)">Dados salvos no navegador</p>
+    <p style="font-size:11px;color:var(--muted)">FieldOps Fibra • v2.0</p>
   `;
 }
 
