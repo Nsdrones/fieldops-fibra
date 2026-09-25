@@ -345,9 +345,12 @@ function iniciarSyncFirebase(){
   window._onSnapshot(window._col('usuarios'), snap=>{
     const dados = [];
     snap.forEach(d=> dados.push(d.data()));
-    if(dados.length > 0){
-      USUARIOS = dados.map(u=>({senha:'1234',...u}));
-      try{ localStorage.setItem('fieldops_users', JSON.stringify(USUARIOS)); }catch(e){}
+    USUARIOS = dados.map(u=>({senha:'1234',...u}));
+    try{ localStorage.setItem('fieldops_users', JSON.stringify(USUARIOS)); }catch(e){}
+    // Atualiza UI se a tela de usuários estiver aberta
+    const opContent = document.getElementById('op-content');
+    if(opContent && opTab==='usuarios'){
+      renderAdminUsuarios(opContent);
     }
   });
 
@@ -1534,7 +1537,11 @@ window.confirmarExcluir = function(uid){
 
 window.excluirUsuario = function(uid){
   const i = USUARIOS.findIndex(x=>x.id===uid); if(i<0) return;
-  USUARIOS.splice(i,1); saveUsers(); closeModal();
+  USUARIOS.splice(i,1);
+  saveUsers();
+  // Remove do Firestore para não voltar pelo listener
+  if(window._fbReady){ window._deleteDoc(window._doc('usuarios', uid)).catch(()=>{}); }
+  closeModal();
   toast('🗑️ Usuário removido');
   renderAdminUsuarios(document.getElementById('op-content'));
 };
