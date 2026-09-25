@@ -57,24 +57,7 @@
   --font:      'IBM Plex Sans', system-ui, sans-serif;
   --mono:      'IBM Plex Mono', monospace;
 }
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg:       #F1F5F9;
-    --surface:  #FFFFFF;
-    --surface2: #F8FAFC;
-    --border:   #E2E8F0;
-    --text:     #0F172A;
-    --muted:    #64748B;
-  }
-}
-:root[data-theme="light"] {
-  --bg:       #F1F5F9;
-  --surface:  #FFFFFF;
-  --surface2: #F8FAFC;
-  --border:   #E2E8F0;
-  --text:     #0F172A;
-  --muted:    #64748B;
-}
+/* Tema sempre escuro — independente do dispositivo ou SO */
 
 /* ── RESET ───────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -172,6 +155,7 @@ select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .chip-aguardando{background:var(--warn-lo);color:var(--warn)}
 .chip-em-campo{background:var(--info-lo);color:var(--info)}
 .chip-concluido{background:var(--ok-lo);color:var(--ok)}
+.chip-certificando{background:rgba(168,85,247,.15);color:#C084FC}
 .chip-emergencia{background:var(--danger-lo);color:var(--danger)}
 .chip-apoio{background:var(--accent-lo);color:var(--accent)}
 
@@ -458,8 +442,8 @@ function elapsed(from,to){ if(!from) return 0; const ms=(to||Date.now())-from; r
 function fmtElapsed(min){ if(!min&&min!==0) return '—'; const h=Math.floor(min/60),m=min%60; return h>0?`${h}h${m.toString().padStart(2,'0')}min`:`${m}min` }
 function getUser(id){ return USUARIOS.find(u=>u.id===id)||null }
 function getOS(id){ return ordens.find(o=>o.id===id) }
-function statusLabel(s){ return {aguardando:'Demanda',['em-campo']:'Em Campo',concluido:'Concluído',emergencia:'Emergência',apoio:'Apoio'}[s]||s }
-function chipClass(s){ return {aguardando:'chip-aguardando',['em-campo']:'chip-em-campo',concluido:'chip-concluido',emergencia:'chip-emergencia',apoio:'chip-apoio'}[s]||'' }
+function statusLabel(s){ return {aguardando:'Demanda',['em-campo']:'Em Campo',certificando:'Certificando',concluido:'Concluído',emergencia:'Emergência',apoio:'Apoio'}[s]||s }
+function chipClass(s){ return {aguardando:'chip-aguardando',['em-campo']:'chip-em-campo',certificando:'chip-certificando',concluido:'chip-concluido',emergencia:'chip-emergencia',apoio:'chip-apoio'}[s]||'' }
 
 function toast(msg, dur=2500){
   const el=document.getElementById('toast');
@@ -669,7 +653,7 @@ function renderOperador(){
       <button class="bnav-item ${opTab==='lista'?'active':''}" onclick="opTab='lista';renderOpContent()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         Ordens
-        ${ordens.filter(o=>o.status==='aguardando').length>0?`<span class="bnav-dot"></span>`:''}
+        ${(ordens.filter(o=>o.status==='aguardando').length+ordens.filter(o=>o.status==='certificando').length)>0?`<span class="bnav-dot" style="${ordens.filter(o=>o.status==='certificando').length>0?'background:#C084FC':''}"></span>`:''}
       </button>
       <button class="bnav-item ${opTab==='nova'?'active':''}" onclick="opTab='nova';renderOpContent()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
@@ -714,11 +698,55 @@ let listaBusca = '';
 
 function renderOpLista(c){
   listaFiltro = 'todos'; listaBusca = '';
+  const filaCert = ordens.filter(o=>o.status==='certificando');
   c.innerHTML = `
     <div class="page-header">
       <h2>Ordens de Serviço</h2>
-      <p>${ordens.length} ordens • ${ordens.filter(o=>o.status==='aguardando').length} em demanda</p>
+      <p>${ordens.length} ordens • ${ordens.filter(o=>o.status==='aguardando').length} em demanda${filaCert.length>0?` • <strong style="color:#C084FC">${filaCert.length} aguardando certificação</strong>`:''}</p>
     </div>
+
+    ${filaCert.length>0?`
+    <div style="padding:10px 16px;border-bottom:2px solid rgba(168,85,247,.4);background:rgba(168,85,247,.07);flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C084FC" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span style="font-size:13px;font-weight:700;color:#C084FC">Fila de Certificação (${filaCert.length})</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${filaCert.map(os=>{
+          const tec = getUser(os.tecnico);
+          return `
+          <div style="background:var(--surface);border:1px solid rgba(168,85,247,.5);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">${os.id}</div>
+                <div style="font-size:13px;font-weight:700">${os.tipo}</div>
+                <div style="font-size:11px;color:var(--muted)">${tec?'👷 '+tec.nome:'—'} • ${os.endereco}</div>
+              </div>
+              <span class="chip chip-certificando" style="flex-shrink:0">Certificando</span>
+            </div>
+            ${os.obs?`<div style="font-size:11px;background:var(--surface2);border-radius:6px;padding:8px;color:var(--muted)"><strong style="color:var(--text)">Solução:</strong> ${os.obs}</div>`:''}
+            ${os.evidencias&&os.evidencias.length>0?`
+              <div>
+                <div style="font-size:10px;color:var(--muted);margin-bottom:4px">📸 ${os.evidencias.length} evidência${os.evidencias.length>1?'s':''}</div>
+                <div style="display:flex;gap:6px;overflow-x:auto">
+                  ${os.evidencias.map((src,i)=>`<div style="width:64px;height:64px;flex-shrink:0;border-radius:6px;overflow:hidden;cursor:pointer" onclick="abrirLightbox(${JSON.stringify(os.evidencias)},${i})"><img src="${src}" style="width:100%;height:100%;object-fit:cover"></div>`).join('')}
+                </div>
+              </div>`:''}
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ok" style="flex:1;font-size:13px" onclick="certificarOS('${os.id}','aprovar')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Aprovar
+              </button>
+              <button class="btn btn-sm" style="flex:1;font-size:13px;border:1px solid var(--danger-lo);color:var(--danger)" onclick="certificarOS('${os.id}','rejeitar')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Rejeitar
+              </button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`:''}
+
     <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px;flex-shrink:0">
       <div style="position:relative">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -728,6 +756,7 @@ function renderOpLista(c){
         <button class="btn btn-sm chip-filter-btn active" data-f="todos" onclick="setFiltro('todos',this)">Todos (${ordens.length})</button>
         <button class="btn btn-sm chip-filter-btn" data-f="aguardando" onclick="setFiltro('aguardando',this)">Demanda (${ordens.filter(o=>o.status==='aguardando').length})</button>
         <button class="btn btn-sm chip-filter-btn" data-f="em-campo" onclick="setFiltro('em-campo',this)">Em Campo (${ordens.filter(o=>o.status==='em-campo').length})</button>
+        <button class="btn btn-sm chip-filter-btn" data-f="certificando" onclick="setFiltro('certificando',this)" style="color:#C084FC;border-color:rgba(168,85,247,.4)">Certificando (${filaCert.length})</button>
         <button class="btn btn-sm chip-filter-btn" data-f="concluido" onclick="setFiltro('concluido',this)">Concluídos (${ordens.filter(o=>o.status==='concluido').length})</button>
       </div>
     </div>
@@ -965,7 +994,7 @@ function renderOpNova(c){
         </div>
         <div class="field">
           <label>PON <span style="color:var(--muted);font-weight:400;text-transform:none">(até 12 dígitos)</span></label>
-          <input id="os-pon" class="input" placeholder="Ex: 123456789012" maxlength="12" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="font-family:var(--mono)">
+          <input id="os-pon" class="input" placeholder="Ex: ABCD12345678" maxlength="12" oninput="this.value=this.value.toUpperCase()" style="font-family:var(--mono)">
         </div>
         <div class="field">
           <label>Prioridade</label>
@@ -1798,7 +1827,17 @@ function renderOSCardTec(os, ativo){
           </div>
         </div>`:''}
 
-      ${ativo?`
+      ${os.status==='certificando'?`
+        <div style="padding:12px;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.4);border-radius:8px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:#C084FC;margin-bottom:4px">📤 Aguardando Certificação</div>
+          <div style="font-size:11px;color:var(--muted)">Suas evidências foram enviadas ao operador. Aguarde a aprovação.</div>
+        </div>
+      `:ativo?`
+        ${os.motivoRejeicao!==undefined?`
+        <div style="padding:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);border-radius:8px;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--danger);margin-bottom:2px">↩️ Certificação rejeitada — verifique e reenvie</div>
+          ${os.motivoRejeicao?`<div style="font-size:11px;color:var(--muted)">${os.motivoRejeicao}</div>`:''}
+        </div>`:''}
         <div class="timer-display" style="margin-bottom:10px">
           <div><div class="timer-label">Tempo em campo</div><div class="timer-val" id="timer-${os.id}">${fmtElapsed(elapsed(os.iniciadoEm))}</div></div>
           <div style="text-align:right"><div class="timer-label">SLA</div><div style="font-size:13px;font-weight:600;color:var(--muted)">${os.sla}min</div></div>
@@ -1852,8 +1891,8 @@ window.abrirBaixa = function(id){
             <textarea id="baixa-obs" class="input" rows="4" placeholder="Descreva o serviço realizado, materiais usados, teste de sinal, etc..."></textarea>
           </div>
           <button class="btn btn-ok btn-full" onclick="concluirOS('${id}')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-            Finalizar OS
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Enviar para Certificação
           </button>
           <button class="btn btn-outline btn-full" onclick="closeTecModal()">Cancelar</button>
         </div>
@@ -1890,13 +1929,37 @@ window.concluirOS = function(id){
   const obs = document.getElementById('baixa-obs')?.value?.trim();
   if(baixaEvidencias.length===0){ toast('⚠️ Adicione ao menos uma foto de evidência'); return; }
   if(!obs){ toast('⚠️ Descreva a solução aplicada'); return; }
-  os.status='concluido'; os.concluidoEm=Date.now();
+  os.status='certificando';
+  os.enviadoCertificacaoEm=Date.now();
   os.evidencias=[...baixaEvidencias]; os.obs=obs;
-  os.duracaoMin = elapsed(os.iniciadoEm, os.concluidoEm);
+  os.duracaoMin = elapsed(os.iniciadoEm, os.enviadoCertificacaoEm);
   if(timers[id]){ clearInterval(timers[id]); delete timers[id]; }
   saveOS(); closeTecModal();
-  toast('✅ OS concluída com sucesso!', 3000);
+  toast('📤 Enviado para certificação!', 3000);
   renderTecContent();
+};
+
+window.certificarOS = function(id, acao){
+  const os = getOS(id); if(!os) return;
+  if(acao==='aprovar'){
+    if(!confirm('Aprovar certificação da OS '+id+'?')) return;
+    os.status = 'concluido';
+    os.concluidoEm = Date.now();
+    os.certificadoPor = currentUser.id;
+    saveOS();
+    toast('✅ OS certificada e concluída!', 3000);
+  } else {
+    const motivo = prompt('Motivo da rejeição (opcional):') ?? '';
+    os.status = 'em-campo';
+    os.rejeitadoEm = Date.now();
+    os.motivoRejeicao = motivo;
+    delete os.evidencias;
+    delete os.obs;
+    delete os.enviadoCertificacaoEm;
+    saveOS();
+    toast('↩️ OS devolvida ao técnico.', 3000);
+  }
+  renderOpContent();
 };
 
 function renderTecHistorico(c){
