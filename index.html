@@ -891,7 +891,7 @@ window.verOS = function(id){
             <div class="tl-item"><div class="tl-dot" style="background:var(--accent)"></div><div class="tl-body"><strong>OS Criada</strong><span>${fmtDateTime(os.criadoEm)}</span></div></div>
             ${os.atribuido?`<div class="tl-item"><div class="tl-dot" style="background:var(--info)"></div><div class="tl-body"><strong>Técnico Atribuído</strong><span>${fmtDateTime(os.atribuido)}</span></div></div>`:''}
             ${os.iniciadoEm?`<div class="tl-item"><div class="tl-dot" style="background:var(--warn)"></div><div class="tl-body"><strong>Trabalho Iniciado</strong><span>${fmtDateTime(os.iniciadoEm)}</span></div></div>`:''}
-            ${os.concluidoEm?`<div class="tl-item"><div class="tl-dot" style="background:var(--ok)"></div><div class="tl-body"><strong>Concluído</strong><span>${fmtDateTime(os.concluidoEm)}</span></div></div>`:''}
+            ${os.concluidoEm?`<div class="tl-item"><div class="tl-dot" style="background:var(--ok)"></div><div class="tl-body"><strong>Concluído</strong><span>${fmtDateTime(os.concluidoEm)}</span>${os.certificadoPor?`<span style="font-size:11px;color:var(--muted)">Certificado por: <strong style="color:var(--text)">${(getUser(os.certificadoPor)||{nome:'—'}).nome}</strong></span>`:''}</div></div>`:''}
           </div>
         </div>
 
@@ -1173,6 +1173,7 @@ window.verRelatorio = function(id){
           ${os.at?`<div class="kv"><span>AT</span><strong>${os.at}</strong></div>`:''}
           ${os.cabo?`<div class="kv"><span>Cabo</span><strong>${os.cabo}</strong></div>`:''}
           ${os.primaria?`<div class="kv"><span>Primária</span><strong>${os.primaria}</strong></div>`:''}
+          ${os.certificadoPor?`<div class="kv"><span>Certificado por</span><strong style="color:var(--ok)">${(getUser(os.certificadoPor)||{nome:'—'}).nome}</strong></div>`:''}
         </div>
         <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
           <div class="kv"><span>Descrição da Demanda</span><strong style="font-size:13px;font-weight:400;line-height:1.5;margin-top:4px;display:block">${os.descricao}</strong></div>
