@@ -727,6 +727,13 @@ function renderOpLista(c){
               </div>
               <span class="chip chip-certificando" style="flex-shrink:0">Certificando</span>
             </div>
+            ${(os.at||os.cabo||os.primaria||os.pon)?`
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px 10px;background:var(--surface2);border-radius:6px;padding:8px">
+                ${os.at?`<div><span style="font-size:9px;color:var(--muted);display:block;text-transform:uppercase;letter-spacing:.4px">AT</span><span style="font-size:11px;font-family:var(--mono)">${os.at}</span></div>`:''}
+                ${os.cabo?`<div><span style="font-size:9px;color:var(--muted);display:block;text-transform:uppercase;letter-spacing:.4px">Cabo</span><span style="font-size:11px;font-family:var(--mono)">${os.cabo}</span></div>`:''}
+                ${os.primaria?`<div><span style="font-size:9px;color:var(--muted);display:block;text-transform:uppercase;letter-spacing:.4px">Primária</span><span style="font-size:11px;font-family:var(--mono)">${os.primaria}</span></div>`:''}
+                ${os.pon?`<div><span style="font-size:9px;color:var(--muted);display:block;text-transform:uppercase;letter-spacing:.4px">PON</span><span style="font-size:11px;font-family:var(--mono)">${os.pon}</span></div>`:''}
+              </div>`:''}
             ${os.obs?`<div style="font-size:11px;background:var(--surface2);border-radius:6px;padding:8px;color:var(--muted)"><strong style="color:var(--text)">Solução:</strong> ${os.obs}</div>`:''}
             ${os.evidencias&&os.evidencias.length>0?`
               <div>
@@ -895,13 +902,20 @@ window.verOS = function(id){
           </div>
         </div>
 
-        ${os.evidencias.length>0?`
+        ${os.fotos&&os.fotos.length>0?`
           <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
-            <h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Evidências (${os.evidencias.length})</h4>
-            <div class="evidence-grid">${os.evidencias.map(e=>`<div class="evidence-img"><img src="${e}" alt="evidência"></div>`).join('')}</div>
+            <h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">📷 Fotos da OS (${os.fotos.length})</h4>
+            <div class="demand-img-grid">${os.fotos.map((src,i)=>`<div class="demand-img-item" onclick="abrirLightbox(${JSON.stringify(os.fotos)},${i})"><img src="${src}" alt="foto ${i+1}"></div>`).join('')}</div>
+          </div>
+        `:''}
+        ${os.evidencias&&os.evidencias.length>0?`
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px">
+            <h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">📸 Evidências de Conclusão (${os.evidencias.length})</h4>
+            <div class="demand-img-grid">${os.evidencias.map((e,i)=>`<div class="demand-img-item" onclick="abrirLightbox(${JSON.stringify(os.evidencias)},${i})"><img src="${e}" alt="evidência ${i+1}"></div>`).join('')}</div>
           </div>
         `:''}
         ${os.obs?`<div style="border:1px solid var(--border);border-radius:8px;padding:12px"><h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">Observações do Técnico</h4><p style="font-size:13px">${os.obs}</p></div>`:''}
+        ${os.motivoRejeicao!==undefined?`<div style="border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.07);border-radius:8px;padding:12px"><h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--danger);margin-bottom:4px">↩️ Certificação Rejeitada</h4><p style="font-size:13px;color:var(--muted)">${os.motivoRejeicao||'Sem motivo informado'}</p></div>`:''}
 
         <div style="display:flex;gap:8px">
           ${os.status==='aguardando'?`<button class="btn btn-primary btn-full" onclick="closeModal();abrirAtribuir('${os.id}')">Atribuir Técnico</button>`:''}
